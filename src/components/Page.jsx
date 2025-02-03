@@ -6,7 +6,9 @@ function Page({ children }) {
   return (
     <div className="dashboard">
       <aside className="sidebar">
-        <h2 className="logo">Odyssey</h2>
+        <NavLink to="/" className="logo">
+          Odyssey
+        </NavLink>
         <nav>
           <ul>
             <li>
@@ -14,9 +16,6 @@ function Page({ children }) {
             </li>
             <li>
               <NavLink to="/courses" className={({ isActive }) => isActive ? "active" : ""}>Courses</NavLink>
-            </li>
-            <li>
-              <NavLink to="/" end className={({ isActive }) => isActive ? "active" : ""}>Home</NavLink>
             </li>
             <li>
               <NavLink to="/missions" className={({ isActive }) => isActive ? "active" : ""}>Missions</NavLink>
@@ -30,21 +29,7 @@ function Page({ children }) {
           </ul>
         </nav>
       </aside>
-      <main className="main-content">
-        <header className="header">
-          <div className="profile">
-            <span>0 ⚡</span>
-            <img
-              src="https://via.placeholder.com/30"
-              alt="profile"
-              className="avatar"
-            />
-          </div>
-        </header>
-        <section className="dashboard-content">
-          {children}
-        </section>
-      </main>
+      {children}
     </div>
   );
 }
