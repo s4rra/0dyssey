@@ -1,15 +1,15 @@
-import {Link,NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
 import "../css/page.css";
+
 
 function Page({ children }) {
   return (
     <div className="dashboard">
-        
       <aside className="sidebar">
-      <Link to="/" className="logo">
-            Odyssey
-          </Link>
+        <Link to="/" className="logo">
+          Odyssey
+        </Link>
         <nav>
           <ul>
             <li>
@@ -18,7 +18,8 @@ function Page({ children }) {
                 className={({ isActive }) => (isActive ? "active" : "")}
                 style={{ textDecoration: "none" }}
               >
-                Courses
+                 {/* <i className="icon-book"></i> */}
+                  Courses
               </NavLink>
             </li>
             <li>

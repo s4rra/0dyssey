@@ -6,6 +6,7 @@ import Missions from "./components/Missions";
 import Shop from "./components/Shop";
 import Settings from "./components/Settings";
 import Page from "./components/Page";
+import './assets/fontello/css/fontello.css';
 
 function App() {
   return (
