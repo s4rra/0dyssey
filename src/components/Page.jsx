@@ -34,7 +34,7 @@ function Page({ children }) {
           <div className="profile">
             <span>0 ⚡</span>
             <img
-              src="https://via.placeholder.com/30"
+              src=""
               alt="profile"
               className="avatar"
             />
