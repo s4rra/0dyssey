@@ -1,48 +1,73 @@
-import { NavLink } from 'react-router-dom';
-import PropTypes from 'prop-types';
+import {Link,NavLink } from "react-router-dom";
+import PropTypes from "prop-types";
 import "../css/page.css";
 
 function Page({ children }) {
   return (
     <div className="dashboard">
+        
       <aside className="sidebar">
-        <NavLink to="/" className="logo">
-          Odyssey
-        </NavLink>
+      <Link to="/" className="logo">
+            Odyssey
+          </Link>
         <nav>
           <ul>
             <li>
-              <NavLink to="/profile" className={({ isActive }) => isActive ? "active" : ""}>Profile</NavLink>
+              <NavLink
+                to="/courses"
+                className={({ isActive }) => (isActive ? "active" : "")}
+                style={{ textDecoration: "none" }}
+              >
+                Courses
+              </NavLink>
             </li>
             <li>
-              <NavLink to="/courses" className={({ isActive }) => isActive ? "active" : ""}>Courses</NavLink>
+              <NavLink
+                to="/missions"
+                className={({ isActive }) => (isActive ? "active" : "")}
+                style={{ textDecoration: "none" }}
+              >
+                Missions
+              </NavLink>
             </li>
             <li>
-              <NavLink to="/missions" className={({ isActive }) => isActive ? "active" : ""}>Missions</NavLink>
+              <NavLink
+                to="/shop"
+                className={({ isActive }) => (isActive ? "active" : "")}
+                style={{ textDecoration: "none" }}
+              >
+                Shop
+              </NavLink>
             </li>
             <li>
-              <NavLink to="/shop" className={({ isActive }) => isActive ? "active" : ""}>Shop</NavLink>
-            </li>
-            <li>
-              <NavLink to="/settings" className={({ isActive }) => isActive ? "active" : ""}>Settings</NavLink>
+              <NavLink
+                to="/settings"
+                className={({ isActive }) => (isActive ? "active" : "")}
+                style={{ textDecoration: "none" }}
+              >
+                Settings
+              </NavLink>
             </li>
           </ul>
         </nav>
       </aside>
       <main className="main-content">
         <header className="header">
-          <div className="profile">
-            <span>0 ⚡</span>
-            <img
-              src=""
-              alt="profile"
-              className="avatar"
-            />
+          {/* <NavLink to="/" className="logo">
+            Odyssey
+          </NavLink> */}
+          <div>
+            <span>0⚡</span>
+            <NavLink
+              to="/profile"
+              className={({ isActive }) => (isActive ? "active" : "")}
+              style={{ textDecoration: "none" }}
+            >
+              Profile
+            </NavLink>
           </div>
         </header>
-        <section className="dashboard-content">
-          {children}
-        </section>
+        <section className="dashboard-content">{children}</section>
       </main>
     </div>
   );

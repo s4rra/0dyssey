@@ -1,7 +1,7 @@
 function Missions() {
   return (
     <div>
-      <h1>Missions Page</h1>
+      <h1>Missions</h1>
     </div>
   );
 }

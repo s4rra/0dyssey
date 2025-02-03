@@ -11,6 +11,7 @@ html {
   font-family: Arial, sans-serif;
   background: #f6f7fb;
   display: flex;
+  
 }
 
 .dashboard {
@@ -25,7 +26,8 @@ html {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 2px 5px #0000001a;
+  align-items: flex-start;
 }
 
 .logo {
@@ -33,29 +35,31 @@ html {
   font-weight: bold;
   color: #000;
   text-decoration: none;
-}
+  margin-bottom: 50px;
 
-.logo:hover {
-  text-decoration: underline;
 }
 
 .sidebar ul {
   list-style: none;
-  padding: 0;
+  width: 100%; /
+
 }
 
 .sidebar li {
-  padding: 12px 0;
+  width: 100%; 
+  padding: 20px ;
   cursor: pointer;
+  text-align: left;
 }
 
 .sidebar .active {
   font-weight: bold;
   color: #51b44b;
+  text-decoration: none;
 }
 
 .main-content {
-  margin-top: 60px; 
+  margin-top: 60px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -65,16 +69,16 @@ html {
 
 .header {
   display: flex;
-  justify-content: flex-end; /* Keep profile section aligned right */
+  justify-content: flex-end;
   align-items: center;
-  width: calc(100% - 250px); /* Ensure it matches the sidebar width */
-  height: 60px; /* Consistent height */
-  background-color: #ffffff; /* Same color as sidebar */
+  width: calc(100% - 250px);
+  height: 60px;
+  background-color: #ffffff;
   padding: 20px;
-  box-shadow: 0 4px 2px -2px  rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 2px -2px #0000001a;
   position: fixed;
   top: 0;
-  left: 250px; /* Align directly with the sidebar */
+  left: 250px;
   z-index: 1000;
 }
 
