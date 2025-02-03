@@ -29,7 +29,21 @@ function Page({ children }) {
           </ul>
         </nav>
       </aside>
-      {children}
+      <main className="main-content">
+        <header className="header">
+          <div className="profile">
+            <span>0 ⚡</span>
+            <img
+              src="https://via.placeholder.com/30"
+              alt="profile"
+              className="avatar"
+            />
+          </div>
+        </header>
+        <section className="dashboard-content">
+          {children}
+        </section>
+      </main>
     </div>
   );
 }
