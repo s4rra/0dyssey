@@ -11,7 +11,6 @@ html {
   font-family: Arial, sans-serif;
   background: #f6f7fb;
   display: flex;
-  
 }
 
 .dashboard {
@@ -38,23 +37,24 @@ html {
   margin-top: 5px;
 
   margin-bottom: 50px;
-
 }
 
 .sidebar ul {
   list-style: none;
-  width: 100%; /
-
+  width: 100%;
 }
 
 .sidebar li {
-  width: 100%; 
-  padding: 20px ;
+  width: 100%;
+  padding: 20px;
   cursor: pointer;
   text-align: left;
 }
+.sidebar a:visited {
+  color: black;
+}
 
-.sidebar .active {
+.sidebar a.active {
   font-weight: bold;
   color: #51b44b;
   text-decoration: none;
