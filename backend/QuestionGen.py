@@ -1,10 +1,13 @@
 import base64
 import os
+import json
+from flask import Flask, jsonify
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
 load_dotenv()
+app = Flask(__name__)
 
 def generate():
     client = genai.Client(
@@ -113,13 +116,25 @@ Bellow is the output format structure for each question type, follow a json obje
             ),
         ],
     )
-
+    generated_text = ""
     for chunk in client.models.generate_content_stream(
         model=model,
         contents=contents,
         config=generate_content_config,
     ):
-        print(chunk.text, end="")
+        #print(chunk.text, end="")
+        generated_text += chunk.text
+        
+    try:
+        questions_json = json.loads(generated_text)
+        return questions_json
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse AI response"}
 
+@app.route('/questions', methods=['Get'])
+def get_questions():
+    questions = generate()
+    return jsonify(questions)
 
-generate()
+if __name__ == '__main__':
+    app.run(debug=True)
