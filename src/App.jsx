@@ -6,6 +6,8 @@ import Missions from "./components/Missions";
 import Shop from "./components/Shop";
 import Settings from "./components/Settings";
 import Page from "./components/Page";
+import Questions from "./components/Questions";
+
 // import './assets/fontello/css/fontello.css';
 
 function App() {
@@ -19,6 +21,7 @@ function App() {
           <Route path="/missions" element={<Page><Missions /></Page>} />
           <Route path="/shop" element={<Page><Shop /></Page>} />
           <Route path="/settings" element={<Page><Settings /></Page>} />
+          <Route path="/questions" element={<Page><Questions /></Page>} />
         </Routes>
       </div>
     </Router>

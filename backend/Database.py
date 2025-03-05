@@ -12,8 +12,7 @@ url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase_client = create_client(url, key)
 
-
-@app.route('/courses', methods=['GET'])
+@app.route('/user-data', methods=['GET'])
 def fetch_user_data():
     try:
         user_id = 4 #user_id should be a paremeter, but its hardcoded for testing now

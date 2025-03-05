@@ -3,11 +3,13 @@ import os
 import json
 from flask import Flask, jsonify
 from dotenv import load_dotenv
+from flask_cors import CORS
 from google import genai
 from google.genai import types
 
 load_dotenv()
 app = Flask(__name__)
+CORS(app)
 
 def generate():
     client = genai.Client(

@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = "http://127.0.0.1:5000/courses"; 
+  const navigate = useNavigate();
+  const API_URL = "http://127.0.0.1:5000/courses";
   useEffect(() => {
     axios.get(API_URL)
       .then(response => {
         setCourses(response.data);
         setLoading(false);
       })
-      .catch(error => console.error("Error fetching courses:", error));
+      .catch((error) => {
+        console.error("Error fetching courses:", error);
+        setLoading(false);
+    });
   }, []);
 
   if (loading) return <p>Loading...</p>;
@@ -21,9 +26,10 @@ function Courses() {
       <h1>Courses</h1>
       <ol>
         {courses.map(course => (
-          <li key={course.lessonID}>{course.lessonName}</li>
+          <li key={course.unitName}>{course.unitName}</li>
         ))}
       </ol>
+      <button onClick={() => navigate("/questions")}>Get Questions</button>
     </div>
   );
 }
