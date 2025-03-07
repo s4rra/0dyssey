@@ -163,7 +163,7 @@ def add_course():
 @app.route('/questions', methods=['Get'])
 def get_questions():
     questions = generate()
-    #print (questions)
+    print ( f"questions: {questions}")
     return jsonify(questions)
 
 @app.route('/user-questions', methods=['GET'])
@@ -176,10 +176,11 @@ def fetch_user_data():
          .eq("userID", user_id)
          .execute()
         )
+        print(f"details: {response}")
         return jsonify(response.data), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(port=80)
+    app.run(port=8080)

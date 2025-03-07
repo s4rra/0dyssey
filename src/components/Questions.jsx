@@ -2,9 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
 function Questions() {
-    const [questions, setQuestions] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const API_URL = "http://127.0.0.1/questions";
+    let [questions, setQuestions] = useState([]);
+    let [loading, setLoading] = useState(true);
+    const API_URL = "http://127.0.0.1:8080/questions";
 
     useEffect(() => {
         axios
