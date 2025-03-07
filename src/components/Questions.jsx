@@ -4,7 +4,7 @@ import axios from "axios";
 function Questions() {
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const API_URL = "http://127.0.0.1:5000/questions";
+    const API_URL = "http://127.0.0.1/questions";
 
     useEffect(() => {
         axios

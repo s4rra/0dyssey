@@ -6,7 +6,7 @@ function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const API_URL = "http://127.0.0.1:5000/courses";
+  const API_URL = "http://127.0.0.1/courses";
   useEffect(() => {
     axios.get(API_URL)
       .then(response => {
