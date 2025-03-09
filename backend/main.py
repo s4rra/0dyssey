@@ -13,9 +13,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)  
 
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
-supabase_client = create_client(url, key)
+SUPABASE_URL = "http://sarra.tailefeb94.ts.net:8000/"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+supabase_client = supabase.create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def generate():
     client = genai.Client(
@@ -42,7 +42,8 @@ def generate():
         response_mime_type="application/json",
         system_instruction=[
             types.Part.from_text(
-                text="""Act as an energetic teacher generating Python questions in JSON format for students 10-17. Prioritize accurate JSON structure while maintaining an engaging tone. Unit and sub unit details will be specified for context of the questions.
+                text="""Act as an energetic teacher generating Python questions in JSON format for students 10-17. Prioritize accurate JSON
+                structure while maintaining an engaging tone. Unit and sub unit details will be specified for context of the questions.
 
 Beginner skill level: Generate exactly 5 questions including a mix of
 1. Fill-in-the-blanks
@@ -169,7 +170,7 @@ def get_questions():
 @app.route('/user-questions', methods=['GET'])
 def fetch_user_data():
     try:
-        user_id = 4 #user_id should be a paremeter, but its hardcoded for testing now
+        user_id = 4 #user_id should be a paremeter, but its hardcoded for testing now 
         response = (
         supabase_client.table("User")
          .select("RefSkillLevel(skillLevel)","RefUnit(unitDescription)","RefSubUnit(subUnitDescription)")
