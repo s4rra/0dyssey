@@ -36,7 +36,9 @@ def add_course():
         }
         response = supabase_client.table("RefUnit").insert(new_course).execute()
         return jsonify(response.data), 201
-
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
 @app.route("/signup", methods=["POST"])
 def signup():
     data = request.json
@@ -67,7 +69,6 @@ def signup():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json
@@ -81,7 +82,6 @@ def login():
         return jsonify({"message": "Login successful", "user": user_data.data[0]}), 200
     else:
         return jsonify({"error": "Invalid credentials"}), 401
-
 
 @app.route('/questions', methods=['Get'])
 def get_questions():
@@ -147,7 +147,7 @@ def generate(user_data):
 Beginner skill level: Generate exactly 5 questions including a mix of
 1. Fill-in-the-blanks
 2. drop-down
-3. Multiple Choice Questions (MCQs)
+3. Multiple Choice Questions
 
 Intermediate skill level: Generate exactly 5 questions including a mix of
 1. Fill-in-the-blanks
@@ -161,8 +161,9 @@ Note:
 - All options should be randomized in order.
 - Coding questions should be specific.
 - For drop-down questions only, use placeholders like \"[BLANK_1]\", \"[BLANK_2]\", etc., within the question text to indicate where dropdowns should appear.
-- For fill-in-the-blanks questions, represent the blanks with a series of underscore characters (e.g., \"_____\"). Do not use \"[BLANK]\" for fill-in-the-blanks.
-
+- For fill-in-the-blanks questions, represent the blanks with a series of underscore characters (e.g., _____). Do not use \"[BLANK]\" for fill-in-the-blanks..
+-For fill_in_the_blanks questions, you can have 1 or 2 blanks to fill. in the options, one is correct(a,b,c, or d) and contains the filling of the blanks.
+-question text shouldnt contain `'\", unless its for code formatting in the question.
 
 Expected input:
 ```json
@@ -179,10 +180,10 @@ Bellow is the output format structure for each question type, follow a json obje
     \"type\": \"fill_in_the_blanks\",
     \"question\": \"question text with blank/s\",
     \"options\": {
-      \"a\": \"\",
-      \"b\": \"\",
-      \"c\": \"\",
-      \"d\": \"\"
+      \"a\": \"option, option\",
+      \"b\": \"ans, ans\",
+      \"c\": \"answer\",
+      \"d\": \"answer, answer, answer\"
     },
     \"correct_answer\": \"a,b,c or d\"
   },
