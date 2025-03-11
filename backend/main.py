@@ -11,13 +11,72 @@ from supabase import create_client
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app)  
+CORS(app)
 
 SUPABASE_URL = "http://sarra.tailefeb94.ts.net:8000/"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
 supabase_client = supabase.create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def generate():
+@app.route('/courses', methods=['GET'])
+def get_courses():
+    try:
+        response = supabase_client.table("RefUnit").select("*").execute()
+        return jsonify(response.data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+      
+@app.route('/courses', methods=['POST'])
+def add_course():
+    try:
+        data = request.get_json()
+        new_course = {
+            "unitID": data.get("unitID"),
+            "unitName": data.get("unitName"),
+        }
+        response = supabase_client.table("RefUnit").insert(new_course).execute()
+        return jsonify(response.data), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/questions', methods=['Get'])
+def get_questions():
+    user_data = fetch_user_data()
+    questions = generate(user_data)
+    #testing
+    print ( f"questions: {questions}, user data:{user_data}")
+    return jsonify(questions)
+
+def fetch_user_data():
+    try:
+        user_id = 4  # Hardcoded for testing
+
+        response = (
+            supabase_client.table("User")
+            .select("RefSkillLevel(skillLevel)", "RefSubUnit(subUnitDescription)", "RefUnit(unitDescription)")
+            .eq("userID", user_id)
+            .execute()
+        )
+
+        if not response.data or len(response.data) == 0:
+            return None
+
+        # required as dictionary
+        user_data = response.data[0]
+        return {
+            "unit": user_data["RefUnit"]["unitDescription"],
+            "subunit": user_data["RefSubUnit"]["subUnitDescription"],
+            "skill_level": user_data["RefSkillLevel"]["skillLevel"]
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+def generate(user_data):
+    if not user_data:
+       return {"error": "user data not found or invalid"}
+
+    user_prompt = f"unit: {user_data['unit']}, sub unit: {user_data['subunit']}, skill level: {user_data['skill_level']}"
+    
     client = genai.Client(
         api_key=os.getenv("GEMINI_API_KEY"),
     )
@@ -26,12 +85,7 @@ def generate():
     contents = [
         types.Content(
             role="user",
-            parts=[
-                types.Part.from_text(
-                    #test it and tell me what do you think about the output, if you have any notes inform me so i can edit the prompt
-                    text="unit: loops, sub unit: for loops, skill level: intermediate"
-                ),
-            ],
+            parts=[types.Part.from_text(text=user_prompt),],
         ),
     ]
     generate_content_config = types.GenerateContentConfig(
@@ -131,57 +185,13 @@ Bellow is the output format structure for each question type, follow a json obje
         contents=contents,
         config=generate_content_config,
     ):
-        #print(chunk.text, end="")
         generated_text += chunk.text
         
     try:
         questions_json = json.loads(generated_text)
         return questions_json
     except json.JSONDecodeError:
-        return {"error": "Failed to parse AI response"}
-
-@app.route('/courses', methods=['GET'])
-def get_courses():
-    try:
-        response = supabase_client.table("RefUnit").select("*").execute()
-        return jsonify(response.data), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-      
-@app.route('/courses', methods=['POST'])
-def add_course():
-    try:
-        data = request.get_json()
-        new_course = {
-            "unitID": data.get("unitID"),
-            "unitName": data.get("unitName"),
-        }
-        response = supabase_client.table("RefUnit").insert(new_course).execute()
-        return jsonify(response.data), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/questions', methods=['Get'])
-def get_questions():
-    questions = generate()
-    print ( f"questions: {questions}")
-    return jsonify(questions)
-
-@app.route('/user-questions', methods=['GET'])
-def fetch_user_data():
-    try:
-        user_id = 4 #user_id should be a paremeter, but its hardcoded for testing now 
-        response = (
-        supabase_client.table("User")
-         .select("RefSkillLevel(skillLevel)","RefUnit(unitDescription)","RefSubUnit(subUnitDescription)")
-         .eq("userID", user_id)
-         .execute()
-        )
-        print(f"details: {response}")
-        return jsonify(response.data), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": "failed to parse AI response"}
 
 if __name__ == '__main__':
     app.run(port=8080)
