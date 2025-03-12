@@ -89,7 +89,6 @@ def get_skill_levels():
         print(f"Error fetching skill levels: {e}")
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/courses', methods=['GET'])
 def get_courses():
     try:
@@ -111,7 +110,6 @@ def add_course():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-
 @app.route('/questions', methods=['Get'])
 def get_questions():
     user_data = fetch_user_data()
@@ -120,32 +118,30 @@ def get_questions():
     print ( f"questions: {questions}, user data:{user_data}")
     return jsonify(questions)
 
-# def fetch_user_data():
-#     try:
-#         user_id = 4  # Hardcoded for testing
+def fetch_user_data():
+     try:
+         user_id = 4  # Hardcoded for testing
 
-#         response = (
-#             supabase_client.table("User")
-#             .select("RefSkillLevel(skillLevel)", "RefSubUnit(subUnitDescription)", "RefUnit(unitDescription)")
-#             .eq("userID", user_id)
-#             .execute()
-#         )
+         response = (
+             supabase_client.table("User")
+             .select("RefSkillLevel(skillLevel)", "RefSubUnit(subUnitDescription)", "RefUnit(unitDescription)")
+             .eq("userID", user_id)
+             .execute()
+         )
 
-#         if not response.data or len(response.data) == 0:
-#             return None
+         if not response.data or len(response.data) == 0:
+             return None
 
-#         # required as dictionary
-#         user_data = response.data[0]
-#         return {
-#             "unit": user_data["RefUnit"]["unitDescription"],
-#             "subunit": user_data["RefSubUnit"]["subUnitDescription"],
-#             "skill_level": user_data["RefSkillLevel"]["skillLevel"]
-#         }
+         # required as dictionary
+         user_data = response.data[0]
+         return {
+             "unit": user_data["RefUnit"]["unitDescription"],
+             "subunit": user_data["RefSubUnit"]["subUnitDescription"],
+             "skill_level": user_data["RefSkillLevel"]["skillLevel"]
+         }
 
-#     except Exception as e:
-#         return {"error": str(e)}
-
-
+     except Exception as e:
+         return {"error": str(e)}
 
 def generate(user_data):
     if not user_data:
