@@ -14,7 +14,7 @@ supabase_client = supabase.create_client(SUPABASE_URL, SUPABASE_KEY)
 @app.route('/courses', methods=['GET'])
 def get_courses():
     try:
-        response = supabase_client.table("RefLesson").select("*").execute()
+        response = supabase_client.table("RefUnit").select("*").execute()
         return jsonify(response.data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -24,10 +24,10 @@ def add_course():
     try:
         data = request.get_json()
         new_course = {
-            "lessonID": data.get("lessonID"),
-            "lessonName": data.get("lessonName"),
+            "unitID": data.get("unitID"),
+            "unitName": data.get("unitName"),
         }
-        response = supabase_client.table("RefLesson").insert(new_course).execute()
+        response = supabase_client.table("RefUnit").insert(new_course).execute()
         return jsonify(response.data), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -21,7 +21,7 @@ function Courses() {
       <h1>Courses</h1>
       <ol>
         {courses.map(course => (
-          <li key={course.lessonID}>{course.lessonName}</li>
+          <li key={course.unitID}>{course.unitName}</li>
         ))}
       </ol>
     </div>
