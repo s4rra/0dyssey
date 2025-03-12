@@ -1,39 +1,34 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-const Login = ({ onLogin }) => {  // Ensure onLogin is passed as a prop
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+const Login = () => {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await axios.post("http://127.0.0.1:8080/login", { email, password });
+            alert(response.data.message);
+            navigate("/dashboard");
+        } catch (error) {
+            alert(error.response?.data?.error || "Login failed");
+        }
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const { data } = await axios.post('http://localhost:8000/login', formData);
-      if (data.user) {
-        onLogin(data.user);  // Call onLogin with user data
-        navigate('/dashboard'); // Redirect to dashboard
-      } else {
-        setError('Invalid credentials');
-      }
-    } catch (error) {
-      setError(error.response?.data?.error || 'Login failed');
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
-      <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
-      <button type="submit">Login</button>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-    </form>
-  );
+    return (
+        <div>
+            <h1>Login</h1>
+            <form onSubmit={handleLogin}>
+                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <button type="submit">Login</button>
+            </form>
+            <button onClick={() => navigate("/signup")}>Sign Up</button>
+        </div>
+    );
 };
 
 export default Login;
