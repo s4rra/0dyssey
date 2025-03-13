@@ -47,13 +47,16 @@ Intermediate skill level: Generate exactly 5 questions. Use only the following q
 
 Expert skill level: Generate exactly 5 questions, Use only the coding question type.
 
-Note:
-- All options should be randomized in order.
-- Coding questions should be specific.
-- For drop-down questions only, use placeholders like \"[BLANK_1]\", \"[BLANK_2]\", etc., within the question text to indicate where dropdowns should appear.
-- For fill-in-the-blanks questions, represent the blanks with a series of underscore characters (e.g., _____). Do not use \"[BLANK]\" for fill-in-the-blanks..
--For fill_in_the_blanks questions, you can have 1 or 2 blanks to fill. in the options, one is correct(a,b,c, or d) and contains the filling of the blanks.
--question text shouldnt contain `'\", unless its for code formatting in the question.
+Guidelines:
+Randomize the order of all questions options. The correct answer should not consistently appear in the same position (e.g., "a").
+Ensure coding questions are precise and well-defined, providing clear instructions.
+Utilize placeholders like "[BLANK_1]" , "[BLANK_2]" , etc., within the question text to indicate dropdown locations.
+Fill-in-the-Blanks Questions:
+Represent blanks with underscores (_____).
+Allow for 1 or 2 blanks per question.
+Provide answer options that contain the completed blanks.
+Do not use "[BLANK]" placeholders for fill in the blank questions.
+Avoid using single quotes (') or double quotes (") in the question text, except for code formatting purposes.
 
 Expected input:
 ```json
@@ -151,3 +154,57 @@ def store_generated_questions(questions, skill_level_id, subunit_id, supabase_cl
     except Exception as e:
         print(f"Error storing questions: {e}")
         return {"error": str(e)}
+
+def check_code():
+    client = genai.Client(
+        api_key=os.environ.get("GEMINI_API_KEY"),
+    )
+
+    model = "gemini-2.0-flash"
+    contents = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part.from_text(text="""INSERT"""),
+            ],
+        ),
+    ]
+    generate_content_config = types.GenerateContentConfig(
+        temperature=1,
+        top_p=0.5,
+        top_k=40,
+        max_output_tokens=500,
+        response_mime_type="application/json",
+        system_instruction=[
+            types.Part.from_text(text="""You are a Python tutor analyzing student answers for multiple Python coding questions for students aged 10-17. Your task is to:
+
+Check correctness: Compare the user’s answer with the expected output and constraints.
+Identify errors: Highlight syntax mistakes, logic errors, or constraint violations.
+Provide hints: Offer a logical hint that points out the issue without revealing the solution. Do not suggest specific functions or methods.
+Analyze efficiency: Comment on whether the solution can be improved.
+Give feedback: Encourage correct answers, and provide constructive feedback if incorrect by giving an example similar to the question..
+Input Format json object, for each question:
+{
+  \"type\": \"coding\",
+  \"question\": \"\",
+  \"expected_output\": \"\",
+  \"constraints\": \"\",
+  \"user_answer\": \"\"
+}
+output Format json object, for each question:
+{
+  \"type\": \"check\",
+  \"question\": \"\",
+  \"user_answer\": \"\",
+  \"hints\": \"Logical hints pointing out the issue.\",
+  \"feedback\": \"Encouragement if correct, constructive feedback if incorrect.\"
+}"""),
+        ],
+    )
+
+    for chunk in client.models.generate_content_stream(
+        model=model,
+        contents=contents,
+        config=generate_content_config,
+    ):
+        print(chunk.text, end="")

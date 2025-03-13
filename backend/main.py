@@ -138,7 +138,7 @@ def get_generate_questions(subunit_id):
         
         #Calling
         questions = functions.generate_questions(subunit_description, skill_level)
-        if not isinstance(questions, list):
+        if not isinstance(questions, list):#note
             return jsonify({"error": "Invalid AI response format"}), 500
         store_result = functions.store_generated_questions(questions, skill_level_id, subunit_id,supabase_client)
         #returning store_result for testing, questions to be used in FE
