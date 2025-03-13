@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const API_URL = "http://127.0.0.1:8080/courses";
 
   useEffect(() => {
@@ -16,7 +18,8 @@ function Courses() {
       .catch((error) => {
         console.error("Error fetching courses:", error);
         setLoading(false);
-      });
+    });
+
   }, []);
 
   if (loading) return <p>Loading...</p>;
@@ -26,6 +29,7 @@ function Courses() {
       <h2>Courses</h2>
       <ul>
         {courses.map(course => (
+
           <li key={course.unitID}>
             <h1>{course.unitName}</h1>
             {course.RefSubUnit && course.RefSubUnit.length > 0 ? (

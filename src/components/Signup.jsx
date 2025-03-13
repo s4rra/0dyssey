@@ -7,6 +7,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
   const [chosenSkillLevel, setChosenSkillLevel] = useState("");
+
   const [skillLevels, setSkillLevels] = useState([]);
   const navigate = useNavigate();
 
@@ -14,6 +15,7 @@ const Signup = () => {
     const fetchSkillLevels = async () => {
       try {
         const response = await axios.get("http://127.0.0.1:8080/skill-levels");
+
         console.log("Fetched skill levels:", response.data); 
         setSkillLevels(response.data); 
       } catch (error) {
@@ -29,6 +31,7 @@ const Signup = () => {
     e.preventDefault();
     try {
       const payload = { email, password, userName, chosenSkillLevel };
+
       console.log("Sending payload:", payload); //debug
       const response = await axios.post(
         "http://127.0.0.1:8080/signup",
@@ -88,5 +91,6 @@ const Signup = () => {
     </div>
   );
 };
+
 
 export default Signup;

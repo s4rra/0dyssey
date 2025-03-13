@@ -1,17 +1,101 @@
+import base64
+import os
+import json
+import supabase
 from flask import Flask, jsonify, request
+from dotenv import load_dotenv
 from flask_cors import CORS
+
+from google import genai
+from google.genai import types
+from supabase import create_client
+
 import supabase
 import os
 from dotenv import load_dotenv
+
 
 
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase_client = supabase.create_client(SUPABASE_URL, SUPABASE_KEY)
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    data = request.json
+    email = data.get("email")
+    password = data.get("password")
+    username = data.get("userName")
+    chosen_skill_level = data.get("chosenSkillLevel") 
+    
+    # print(f"Incoming data: {data}")
+    # print(f"Email: {email}, Password: {password}, Username: {username}, Skill Level: {chosen_skill_level}")
+
+    if not email or not password or not username or not chosen_skill_level:
+        return jsonify({"error": "Email, password, username, and skill level are required"}), 400
+
+    try:
+
+        # print(f"Inserting user: Email={email}, Username={username}, Skill Level={chosen_skill_level}")
+
+       
+        existing_user = supabase_client.from_("User").select("Email").eq("Email", email).execute()
+        if existing_user.data:
+            return jsonify({"error": "Email already registered"}), 400
+
+        response = supabase_client.from_("User").insert({
+            "Email": email,
+            "Password": password,
+            "userName": username,
+            "chosenSkillLevel": chosen_skill_level 
+        }).execute()
+        
+        # print(f"Supabase response: {response}")
+
+        return jsonify({"message": "User created successfully"}), 201
+
+    except Exception as e:
+        print(f"Signup error: {e}")
+        return jsonify({"error": str(e)}), 500
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    try:
+        print(f"Logging in user: {email}")
+
+        response = supabase_client.from_("User").select("userID").eq("Email", email).eq("Password", password).execute()
+
+        print(f"Login response: {response}")
+
+        if response.data:
+            return jsonify({"message": "Login successful", "user_id": response.data[0]["userID"]}), 200
+        else:
+            return jsonify({"error": "Invalid email or password"}), 401
+
+    except Exception as e:
+        # print(f"Login error: {e}")  
+        return jsonify({"error": str(e)}), 500
+@app.route("/skill-levels", methods=["GET"])
+def get_skill_levels():
+    try:
+        response = supabase_client.from_("RefSkillLevel").select("*").execute()
+        # print("Fetched skill levels:", response.data)
+        return jsonify(response.data), 200
+    except Exception as e:
+        print(f"Error fetching skill levels: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/signup", methods=["POST"])
 def signup():
@@ -74,17 +158,19 @@ def get_skill_levels():
 @app.route('/courses', methods=['GET'])
 def get_courses():
     try:
+
         # Fetch units with nested subunits
         response = supabase_client.from_("RefUnit").select("unitID, unitName, RefSubUnit(subUnitID, subUnitName)").execute()
         
         # Debugging: Print the fetched data
         print("Fetched courses with subunits:", response.data)
 
+
         return jsonify(response.data), 200
     except Exception as e:
         print("Error fetching courses:", e)
         return jsonify({"error": str(e)}), 500
-
+      
 @app.route('/courses', methods=['POST'])
 def add_course():
     try:
@@ -97,6 +183,162 @@ def add_course():
         return jsonify(response.data), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/questions', methods=['Get'])
+def get_questions():
+    user_data = fetch_user_data()
+    questions = generate(user_data)
+    #testing
+    print ( f"questions: {questions}, user data:{user_data}")
+    return jsonify(questions)
+
+def fetch_user_data():
+     try:
+         user_id = 4  # Hardcoded for testing
+
+         response = (
+             supabase_client.table("User")
+             .select("RefSkillLevel(skillLevel)", "RefSubUnit(subUnitDescription)", "RefUnit(unitDescription)")
+             .eq("userID", user_id)
+             .execute()
+         )
+
+         if not response.data or len(response.data) == 0:
+             return None
+
+         # required as dictionary
+         user_data = response.data[0]
+         return {
+             "unit": user_data["RefUnit"]["unitDescription"],
+             "subunit": user_data["RefSubUnit"]["subUnitDescription"],
+             "skill_level": user_data["RefSkillLevel"]["skillLevel"]
+         }
+
+     except Exception as e:
+         return {"error": str(e)}
+
+def generate(user_data):
+    if not user_data:
+       return {"error": "user data not found or invalid"}
+
+    user_prompt = f"unit: {user_data['unit']}, sub unit: {user_data['subunit']}, skill level: {user_data['skill_level']}"
+    
+    client = genai.Client(
+        api_key=os.getenv("GEMINI_API_KEY"),
+    )
+
+    model = "gemini-2.0-flash"
+    contents = [
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=user_prompt),],
+        ),
+    ]
+    generate_content_config = types.GenerateContentConfig(
+        temperature=1,
+        top_p=0.5,
+        top_k=40,
+        max_output_tokens=1000,
+        response_mime_type="application/json",
+        system_instruction=[
+            types.Part.from_text(
+                text="""Act as an energetic teacher generating Python questions in JSON format for students 10-17. Prioritize accurate JSON
+                structure while maintaining an engaging tone. Unit and sub unit details will be specified for context of the questions.
+
+Beginner skill level: Generate exactly 5 questions including a mix of
+1. Fill-in-the-blanks
+2. drop-down
+3. Multiple Choice Questions
+
+Intermediate skill level: Generate exactly 5 questions including a mix of
+1. Fill-in-the-blanks
+2. Drop down
+3. MCQs
+4. Written Code Questions
+
+Expert skill level: Generate exactly 5 questions, all of them must be written code questions.
+
+Note: 
+- All options should be randomized in order.
+- Coding questions should be specific.
+- For drop-down questions only, use placeholders like \"[BLANK_1]\", \"[BLANK_2]\", etc., within the question text to indicate where dropdowns should appear.
+- For fill-in-the-blanks questions, represent the blanks with a series of underscore characters (e.g., _____). Do not use \"[BLANK]\" for fill-in-the-blanks..
+-For fill_in_the_blanks questions, you can have 1 or 2 blanks to fill. in the options, one is correct(a,b,c, or d) and contains the filling of the blanks.
+-question text shouldnt contain `'\", unless its for code formatting in the question.
+
+Expected input:
+```json
+{
+  \"unit\": \"\",
+  \"subunit\": \"\",
+  \"skill_level\": \"\"
+}
+```
+
+Bellow is the output format structure for each question type, follow a json object stricket format:
+ {
+  \"question(number)\": {
+    \"type\": \"fill_in_the_blanks\",
+    \"question\": \"question text with blank/s\",
+    \"options\": {
+      \"a\": \"option, option\",
+      \"b\": \"ans, ans\",
+      \"c\": \"answer\",
+      \"d\": \"answer, answer, answer\"
+    },
+    \"correct_answer\": \"a,b,c or d\"
+  },
+  \"question(number)\": {
+    \"type\": \"multiple_choice\",
+    \"question\": \"question text\",
+    \"options\": {
+      \"a\": \"\",
+      \"b\": \"\",
+      \"c\": \"\",
+      \"d\": \"\"
+    },
+    \"correct_answer\": \"a,b,c,or d\"
+  },
+ \"question(number)\": {
+\"type\": \"drop_down\",
+\"question\": \"question text with [BLANK_1], [BLANK_2], etc.\",
+\"dropdowns\": [
+{
+\"placeholder\": \"[BLANK_1]\",
+\"options\": [\"option1\", \"option2\", \"option3\"],
+\"correctAnswer\": \"option\"
+},
+{
+\"placeholder\": \"[BLANK_2]\",
+\"options\": [\"choiceA\", \"choiceB\", \"choiceC\", \"choiceD\"],
+\"correctAnswer\": \"choice\"
+}
+// Add more dropdowns for each placeholder in question
+]
+},
+  \"question(number)\": {
+    \"type\": \"coding\",
+    \"question\": \"question text\",
+    \"expected_output\": \"\",
+    \"constraints\": \"\"
+  }
+}"""
+            ),
+        ],
+    )
+    generated_text = ""
+    for chunk in client.models.generate_content_stream(
+        model=model,
+        contents=contents,
+        config=generate_content_config,
+    ):
+        generated_text += chunk.text
+        
+    try:
+        questions_json = json.loads(generated_text)
+        return questions_json
+    except json.JSONDecodeError:
+        return {"error": "failed to parse AI response"}
 
 
 if __name__ == '__main__':
