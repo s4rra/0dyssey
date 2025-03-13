@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom"; // Import useParams
 import axios from "axios";
-import { useParams } from "react-router-dom";
 
-function Questions() {
-  const { subunit_id } = useParams();
+function Questions({ userId }) {
+  const { subunitId } = useParams(); // Extract subunitId from the URL
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = `http://127.0.0.1:8080/questions/${subunit_id}`;  // Define API_URL
+  const API_URL = `http://127.0.0.1:8080/subunits/${subunitId}/questions`;
 
   useEffect(() => {
+    if (!subunitId) {
+      console.error("Subunit ID is undefined");
+      return;
+    }
+
     axios.get(API_URL)
       .then(response => {
-        console.log("Fetched questions:", response.data);
         setQuestions(response.data);
         setLoading(false);
       })
@@ -19,15 +23,16 @@ function Questions() {
         console.error("Error fetching questions:", error);
         setLoading(false);
       });
-  }, [API_URL, subunit_id]);  // Add API_URL and subunit_id to the dependency array
+  }, [subunitId]); // Re-run effect when subunitId changes
 
   const handleGenerateQuestions = () => {
-    axios.post("http://127.0.0.1:8080/generate-questions", {
-      subunit_id: subunit_id,
-      skill_level: "beginner"  // Adjust based on user selection
-    })
+    if (!subunitId) {
+      console.error("Subunit ID is undefined");
+      return;
+    }
+
+    axios.post(`http://127.0.0.1:8080/subunits/${subunitId}/generate-questions`, { user_id: userId })
       .then(response => {
-        console.log("Generated questions:", response.data);
         setQuestions([...questions, ...response.data]);
       })
       .catch((error) => {
@@ -41,8 +46,8 @@ function Questions() {
     <div>
       <h2>Questions</h2>
       <ul>
-        {questions.map(question => (
-          <li key={question.questionID}>
+        {questions.map((question, index) => (
+          <li key={index}>
             <p>{question.questionText}</p>
           </li>
         ))}

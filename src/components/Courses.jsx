@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const API_URL = "http://127.0.0.1:8080/courses";
 
   useEffect(() => {
     axios.get(API_URL)
       .then(response => {
-        console.log("Fetched courses:", response.data); // Debugging step
+        console.log("Fetched courses:", response.data);
         setCourses(response.data);
         setLoading(false);
       })
@@ -31,7 +33,20 @@ function Courses() {
             {course.RefSubUnit && course.RefSubUnit.length > 0 ? (
               <ul>
                 {course.RefSubUnit.map(subUnit => (
-                  <li key={subUnit.subUnitID}>{subUnit.subUnitName}</li>
+                  <li key={subUnit.subUnitID}>
+                    <button 
+                      onClick={() => navigate(`/subunit/${subUnit.subUnitID}/questions`)} // Pass subunitId correctly
+                      style={{ 
+                        background: "none", 
+                        border: "none", 
+                        color: "blue", 
+                        textDecoration: "underline", 
+                        cursor: "pointer" 
+                      }}
+                    >
+                      {subUnit.subUnitName}
+                    </button>
+                  </li>
                 ))}
               </ul>
             ) : (
