@@ -2,7 +2,6 @@ import { Link, NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
 import "../css/page.css";
 
-
 function Page({ children }) {
   return (
     <div className="dashboard">
@@ -18,8 +17,7 @@ function Page({ children }) {
                 className={({ isActive }) => (isActive ? "active" : "")}
                 style={{ textDecoration: "none" }}
               >
-                 {/* <i className="icon-book"></i> */}
-                  Courses
+                Courses
               </NavLink>
             </li>
             <li>
@@ -54,9 +52,6 @@ function Page({ children }) {
       </aside>
       <main className="main-content">
         <header className="header">
-          {/* <NavLink to="/" className="logo">
-            Odyssey
-          </NavLink> */}
           <div>
             <span>0⚡</span>
             <NavLink
