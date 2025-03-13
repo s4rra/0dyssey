@@ -7,16 +7,17 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
   const [chosenSkillLevel, setChosenSkillLevel] = useState("");
-  const [skillLevels, setSkillLevels] = useState([]); // State to store skill levels
+
+  const [skillLevels, setSkillLevels] = useState([]);
   const navigate = useNavigate();
 
-  // Fetch skill levels from Supabase when the component mounts
   useEffect(() => {
     const fetchSkillLevels = async () => {
       try {
         const response = await axios.get("http://127.0.0.1:8080/skill-levels");
-        console.log("Fetched skill levels:", response.data); // Check the data
-        setSkillLevels(response.data); // Update state
+
+        console.log("Fetched skill levels:", response.data); 
+        setSkillLevels(response.data); 
       } catch (error) {
         console.error("Failed to fetch skill levels:", error);
       }
@@ -30,7 +31,8 @@ const Signup = () => {
     e.preventDefault();
     try {
       const payload = { email, password, userName, chosenSkillLevel };
-      console.log("Sending payload:", payload); // Debugging: Log the payload
+
+      console.log("Sending payload:", payload); //debug
       const response = await axios.post(
         "http://127.0.0.1:8080/signup",
         payload
@@ -89,5 +91,6 @@ const Signup = () => {
     </div>
   );
 };
+
 
 export default Signup;
