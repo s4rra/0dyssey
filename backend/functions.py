@@ -45,7 +45,7 @@ Intermediate skill level: Generate exactly 5 questions. Use only the following q
 3. MCQs
 4. Written Code Questions
 
-Expert skill level: Generate exactly 5 questions, Use only the coding question type.
+Advanced skill level: Generate exactly 5 questions, Use only the coding question type.
 
 Guidelines:
 Randomize the order of all questions options. The correct answer should not consistently appear in the same position (e.g., "a").
@@ -79,7 +79,7 @@ Bellow is the output format structure for each question type:
     \"correct_answer\": \"a,b,c or d\"
   },
   \"question(number)\": {
-    \"type\": \"multiple_choice\",
+    \"type\": \"MCQ\",
     \"question\": \"question text\",
     \"options\": {
       \"a\": \"\",
@@ -90,7 +90,7 @@ Bellow is the output format structure for each question type:
     \"correct_answer\": \"a,b,c,or d\"
   },
  \"question(number)\": {
-\"type\": \"drop_down\",
+\"type\": \"DropDown\",
 \"question\": \"question text with [BLANK_1], [BLANK_2], etc.\",
 \"dropdowns\": [
 {
@@ -133,17 +133,34 @@ Bellow is the output format structure for each question type:
 
 def store_generated_questions(questions, skill_level_id, subunit_id, supabase_client):
     try:
+        # Fetch unitID from the subunit table
+        unit_response = supabase_client.from_("RefSubUnit").select("unitID").eq("subUnitID", subunit_id).execute()
+        if not unit_response.data:
+            return {"error": "Unit ID (chapterID) not found for the given subunit"}
+
+        chapter_id = unit_response.data[0]["unitID"]
+
         for question in questions:
-            # needs review...
+            # Get the question type from the questionType table
+            question_type_response = supabase_client.from_("questionType").select("questionTypeID").eq("questionType", question["type"]).execute()
+            if not question_type_response.data:
+                return {"error": f"Question type '{question['type']}' not found"}
+            
+            question_type_id = question_type_response.data[0]["questionTypeID"]
+
             # Prepare question data
             question_data = {
-                "questionTypeID": 1,  # Placeholder, should be dynamic
+                "questionTypeID": question_type_id,
                 "skillLevelID": skill_level_id,
                 "lessonID": subunit_id,
-                "questionText": question["question"],
+                "chapterID": chapter_id,
+                "questionText": question["question"], #ENTIRE QUESTION
                 "generated": True,
-                "questionCode": question.get("expected_output", ""),
-                "Tags": json.dumps(question.get("tags", [])) if "tags" in question else "[]"
+                "questionCode": question.get("expected_output", ""), ##FOR CODING QUESTIONS?
+                #"correct_answer": question.get("correct_answer", ""),  # correct answer
+                #"options": json.dumps(question.get("options", {})),  # options
+               #"dropdowns": json.dumps(question.get("dropdowns", [])),  # dropdowns 
+                "Tags": "[]"  # empty for now
             }
 
             # Insert into Supabase

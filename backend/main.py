@@ -105,8 +105,28 @@ def add_course():
 @cross_origin()
 def get_subunit_questions(subunit_id):
     try:
-        # Fetch questions from the database for the given subunit
-        response = supabase_client.from_("Question").select("*").eq("lessonID", subunit_id).execute()
+        # Get user_id
+        user_id = request.args.get("user_id")  
+        if not user_id:
+            return jsonify({"error": "User ID is required"}), 400
+        
+        # Fetch user's skill level
+        response = supabase_client.from_("User").select("chosenSkillLevel").eq("userID", user_id).execute()
+        if not response.data:
+            return jsonify({"error": "User not found"}), 404
+
+        skill_level_id = response.data[0]["chosenSkillLevel"]
+
+        # Fetch 5 questions from the database for the given subunit, matching user skilllevel, we may need randomization
+        
+        response = (
+            supabase_client.from_("Question")
+            .select("*")
+            .eq("lessonID", subunit_id)
+            .eq("skillLevelID", skill_level_id)
+            .limit(2)  # Limit to 5 questions
+            .execute()
+        )
         return jsonify(response.data), 200
     except Exception as e:
         print(f"Error fetching questions: {e}")
@@ -114,12 +134,15 @@ def get_subunit_questions(subunit_id):
 
 @app.route('/subunits/<int:subunit_id>/generate-questions', methods=['POST', 'OPTIONS'])
 @cross_origin()
-def get_generate_questions(subunit_id):
-    try: # Fetch subunit details
+def generate_questions(subunit_id):
+    try: 
+        # Fetch subunit details
         subunit_response = supabase_client.from_("RefSubUnit").select("subUnitDescription").eq("subUnitID", subunit_id).execute()
         if not subunit_response.data:
             return jsonify({"error": "Subunit not found"}), 404
+
         subunit_description = subunit_response.data[0]["subUnitDescription"]
+
         # Fetch user's skill level
         user_id = request.json.get("user_id")
         if not user_id:
@@ -130,23 +153,29 @@ def get_generate_questions(subunit_id):
             return jsonify({"error": "User not found"}), 404
 
         skill_level_id = user_response.data[0]["chosenSkillLevel"]
+        
         skill_level_response = supabase_client.from_("RefSkillLevel").select("skillLevel").eq("skillLevelID", skill_level_id).execute()
         if not skill_level_response.data:
-            return jsonify({"error": "Skill level not found"}), 404
+           return jsonify({"error": "Skill level not found"}), 404
 
         skill_level = skill_level_response.data[0]["skillLevel"]
-        
+
         #Calling
         questions = functions.generate_questions(subunit_description, skill_level)
-        if not isinstance(questions, list):#note
-            return jsonify({"error": "Invalid AI response format"}), 500
-        store_result = functions.store_generated_questions(questions, skill_level_id, subunit_id,supabase_client)
-        #returning store_result for testing, questions to be used in FE
-        return jsonify({"questions": questions, "store_result": store_result}), 200
+        #storing function still needs review
+        #functions.store_generated_questions(questions, skill_level_id, subunit_id,supabase_client)
+        return jsonify(questions), 200
     
     except Exception as e:
         print(f"Error getting generate input: {e}")
         return jsonify({"error": str(e)}), 500
     
+@app.route('/check-answers', methods=['POST'])
+def check_answers():
+    #storing function still needs review
+    #Compare user answers with the correct answers from the database
+    #scores, points?
+    return
+
 if __name__ == '__main__':
     app.run(port=8080)

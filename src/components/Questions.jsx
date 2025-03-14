@@ -4,16 +4,18 @@ import axios from "axios";
 
 function Questions({ userId }) {
   const { subunitId } = useParams(); // Extract subunitId from the URL
+
+  if (!subunitId) {
+    console.error("Subunit ID is undefined");
+    return <p>Error: Subunit not found.</p>;
+  }
+
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userAnswers, setUserAnswers] = useState({});
   const API_URL = `http://127.0.0.1:8080/subunits/${subunitId}/questions`;
 
   useEffect(() => {
-    if (!subunitId) {
-      console.error("Subunit ID is undefined");
-      return;
-    }
-
     axios.get(API_URL)
       .then(response => {
         setQuestions(response.data);
@@ -26,18 +28,17 @@ function Questions({ userId }) {
   }, [subunitId]); // Re-run effect when subunitId changes
 
   const handleGenerateQuestions = () => {
-    if (!subunitId) {
-      console.error("Subunit ID is undefined");
-      return;
-    }
-
     axios.post(`http://127.0.0.1:8080/subunits/${subunitId}/generate-questions`, { user_id: userId })
-      .then(response => {
-        setQuestions([...questions, ...response.data]);
-      })
-      .catch((error) => {
-        console.error("Error generating questions:", error);
-      });
+    .then(response => {
+      if (Array.isArray(response.data)) { //  array?
+        setQuestions([...questions, ...response.data]); //Append only the new questions
+      } else {
+        console.error("Invalid response format:", response.data);
+      }
+    })
+    .catch((error) => {
+      console.error("Error generating questions:", error);
+    });
   };
 
   if (loading) return <p>Loading...</p>;
