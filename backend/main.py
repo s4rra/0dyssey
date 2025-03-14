@@ -105,11 +105,11 @@ def add_course():
 @cross_origin()
 def get_subunit_questions(subunit_id):
     try:
-        # Get user_id
-        user_id = request.args.get("user_id")  
+        # Get user_id from request
+        user_id = request.args.get("user_id")
         if not user_id:
             return jsonify({"error": "User ID is required"}), 400
-        
+       
         # Fetch user's skill level
         response = supabase_client.from_("User").select("chosenSkillLevel").eq("userID", user_id).execute()
         if not response.data:
