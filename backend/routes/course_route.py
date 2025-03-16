@@ -9,6 +9,11 @@ def get_courses():
     data, status_code = CourseService.get_courses()
     return jsonify(data), status_code
 
+@course_bp.route("/questions", methods=["GET"])
+def get_questions():
+    data, status_code = CourseService.get_questions()
+    return jsonify(data), status_code
+
 @course_bp.route("/courses", methods=["POST"])
 def add_course():
     auth_result = verify_token()

@@ -8,24 +8,24 @@ class QuestionService:
     def get_questions(subunit_id, user):
         #fetches questions based on user's skill level and subunit
         try:
-            user_id = user["id"]  # extract userID from session
+            """user_id = user["id"]  # extract userID from session
             
-            # Fetch user skill level
+             # Fetch user skill level
             user_response = supabase_client.table("User").select("chosenSkillLevel").eq("userID", user_id).execute()
             if not user_response.data:
                 return {"error": "User not found"}, 404
             
-            skill_level_id = user_response.data[0]["chosenSkillLevel"]
+            skill_level_id = user_response.data[0]["chosenSkillLevel"] """
 
             # Fetch questions from the database, based on subunitID and skilllevel
             response = (
                 supabase_client.table("Question")
                 .select("*")
-                .eq("lessonID", subunit_id)
-                .eq("skillLevelID", skill_level_id)
+                .eq("lessonID", 1)
                 .limit(5) #ik this will get the first 5 questions that match...
                 .execute()
             )
+            print(response.data)
             if response.data:
                 return response.data, 200
             else:
@@ -155,3 +155,5 @@ class QuestionService:
             return {"score": score, "total": len(user_answers), "results": results}, 200
         except Exception as e:
             return {"error": str(e)}, 500
+        
+response =QuestionService.get_questions(1,"")

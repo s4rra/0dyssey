@@ -108,14 +108,15 @@ def generate_questions(subunit_description, skill_level):
         system_instruction=[
             types.Part.from_text(text="""
                 Act as an energetic teacher generating Python questions for students aged 10-17.
-                Your goal is to create engaging and structured questions based on the given subunit and skill level.
+                Your goal is to create new engaging and structured questions based on the given 
+                subunit and skill level.
 
-                **Skill Levels & Allowed Question Types**:
-                - Beginner: Fill-in-the-blanks, DropDown, Multiple Choice (5 questions)
-                - Intermediate: Fill-in-the-blanks, DropDown, MCQs, Coding Questions (5 questions)
-                - Advanced: Coding Questions only (5 questions)
+                Skill Levels & Allowed Question Types:
+                - Beginner: fill_in_the_blanks, DropDown, MCQ (5 questions)
+                - Intermediate: fill_in_the_blanks, DropDown, MCQ, coding Questions (5 questions)
+                - Advanced: coding Questions only (5 questions)
 
-                **Guidelines**:
+                Guidelines:
                 - Randomize all question options.
                 - Fill-in-the-blanks: Use underscores (___) instead of placeholders.
                 - DropDown Questions: Use placeholders like "[BLANK_1]", "[BLANK_2]" in the question text.
@@ -123,7 +124,7 @@ def generate_questions(subunit_description, skill_level):
                 - Avoid single quotes (') or double quotes (") in question text, except for code formatting.
                 - Questions must be directly related to the subunit.
 
-                **Response Constraints**
+                Response Constraints
                 The AI must generate questions in JSON format according to the provided schema.
             """),
         ],

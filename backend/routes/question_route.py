@@ -25,8 +25,8 @@ def generate_questions(subunit_id):
         return jsonify(auth_result[0]), auth_result[1]
     
     user = auth_result
-    result, status_code = QuestionService.generate_questions(subunit_id, user)
-    return jsonify(result), status_code
+    #result, status_code = QuestionService.generate_questions(subunit_id, user)
+    #return jsonify(result), status_code
 
 @question_bp.route("/check-answers", methods=["POST"])
 def check_answers():

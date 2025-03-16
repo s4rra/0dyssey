@@ -26,3 +26,22 @@ class CourseService:
                 return {"error": "Failed to add course"}, 500
         except Exception as e:
             return {"error": str(e)}, 500
+
+    @staticmethod
+    def get_questions():
+        try:
+            response = (
+                supabase_client.table("Question")
+                .select("*")
+                .eq("lessonID", 1)
+                .limit(5)
+                .execute()
+            )
+            print(response.data)
+            if response.data:
+                return response.data, 200
+            else:
+                return {"error": "No questions found"}, 404
+        except Exception as e:
+            return {"error": str(e)}, 500
+        
