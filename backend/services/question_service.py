@@ -1,6 +1,6 @@
 import json
 from config.settings import supabase_client
-from functions import generate_questions
+from functions import generate_questions, check_code
 
 #handle fetching questions, ai questions and checking answers
 class QuestionService:
@@ -68,6 +68,8 @@ class QuestionService:
                 return {"error": "Unit ID not found for subunit"}, 404
 
             chapter_id = unit_response.data[0]["unitID"]
+            
+            stored_questions = []
 
             for question in questions:
                 question_type_response = supabase_client.table("questionType").select("questionTypeID").eq("questionType", question["type"]).execute()
@@ -90,49 +92,61 @@ class QuestionService:
                     "constraints": question.get("constraints", "")  # For coding questions
                 }
 
-                supabase_client.table("Question").insert(question_data).execute()
+                question_response = supabase_client.table("Question").insert(question_data).execute()
+                if question_response.data:
+                    stored_questions.append(question_response.data[0])
 
-            return {"message": "Questions stored successfully"}, 200
+            return {"message": "Questions stored successfully", "questions": stored_questions}, 200
         except Exception as e:
             return {"error": str(e)}, 500
 
-@staticmethod
-def check_answers(user, user_answers):
-    try:
-        user_id = user["id"]  # extract userID from session
-        
-        # Fetch questions with their correct answers
-        question_ids = list(user_answers.keys())
-        questions_response = supabase_client.from_("Question").select("questionID, correctAnswer, questionTypeID").in_("questionID", question_ids).execute()
-        
-        if not questions_response.data:
-            return {"error": "No questions found"}, 404
+    @staticmethod
+    def check_answers(user, user_answers):
+        try:
+            user_id = user["id"]  # extract userID from session
+            
+            # Fetch questions with their correct answers
+            question_ids = list(user_answers.keys())
+            questions_response = supabase_client.table("Question").select("questionID, correctAnswer, questionTypeID, expected_output, constraints").in_("questionID", question_ids).execute()
+            
+            if not questions_response.data:
+                return {"error": "No questions found"}, 404
 
-        # Group questions by ID for easy lookup
-        questions = {str(q["questionID"]): q for q in questions_response.data}
-        
-        # Calculate score
-        score = 0
-        results = []
-        
-        for q_id, answer in user_answers.items():
-            if q_id in questions:
-                question = questions[q_id]
-                is_correct = False
-                
-                # Simple comparison for most question types
-                if answer == question["correctAnswer"]:
-                    is_correct = True
-                    score += 1
-                
-                results.append({
-                    "questionID": q_id,
-                    "correct": is_correct
-                })
+            # Group questions by ID for easy lookup
+            questions = {str(q["questionID"]): q for q in questions_response.data}
+            
+            # Calculate score
+            score = 0
+            results = []
+            
+            for q_id, answer in user_answers.items():
+                if q_id in questions:
+                    question = questions[q_id]
+                    is_correct = False
+                    
+                    # Check if it's a coding question
+                    question_type_response = supabase_client.table("questionType").select("questionType").eq("questionTypeID", question["questionTypeID"]).execute()
+                    if question_type_response.data and question_type_response.data[0]["questionType"] == "coding":
+                        # Use the check_code function for coding questions
+                        code_check = check_code(answer, question["expected_output"], question["constraints"])
+                        # Determine if the code is correct based on the AI's evaluation
+                        is_correct = "correct" in code_check.get("feedback", "").lower()
+                    else:
+                        # Simple comparison for most question types
+                        if answer == question["correctAnswer"]:
+                            is_correct = True
+                    
+                    if is_correct:
+                        score += 1
+                    
+                    results.append({
+                        "questionID": q_id,
+                        "correct": is_correct
+                    })
 
-        # Update user points
-        supabase_client.from_("User").update({"Points": supabase_client.func.increment(score)}).eq("userID", user_id).execute()
+            # Update user points
+            supabase_client.table("User").update({"Points": supabase_client.sql("Points + " + str(score))}).eq("userID", user_id).execute()
 
-        return {"score": score, "total": len(user_answers), "results": results}, 200
-    except Exception as e:
-        return {"error": str(e)}, 500
+            return {"score": score, "total": len(user_answers), "results": results}, 200
+        except Exception as e:
+            return {"error": str(e)}, 500

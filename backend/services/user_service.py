@@ -1,5 +1,6 @@
 import os
 import jwt
+import uuid
 from datetime import datetime, timezone, timedelta
 from config.settings import supabase_client
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,13 +18,19 @@ class UserService:
             if existing_user.data:
                 return {"error": "Email already registered."}, 400
 
-            # ✅ Step 2: Insert user manually into "User" table
+            # Generate UUID for userID
+            user_id = str(uuid.uuid4())
+
+            # ✅ Step 2: Insert user manually into "User" table with explicit userID
             response = supabase_client.from_("User").insert({
+                "userID": user_id,
                 "Email": email,
                 "Password": generate_password_hash(password),
                 "userName": username,
                 "chosenSkillLevel": chosen_skill_level,
-                "DOB": dob
+                "DOB": dob,
+                "Points": 0,
+                "streakLength": 0
             }).execute()
             if not response.data:
                 return {"error": "Failed to create user."}, 500
