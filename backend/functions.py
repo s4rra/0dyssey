@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 load_dotenv()
-
+#uses  google gemini API to generate questions
 def generate_questions(subunit_description, skill_level):
     #Returns:list: A list of generated questions in JSON format.
     client = genai.Client(
@@ -144,48 +144,16 @@ def generate_questions(subunit_description, skill_level):
     except json.JSONDecodeError:
         return {"error": "Failed to parse AI response"}
 
-def store_generated_questions(questions, skill_level_id, subunit_id, supabase_client):
-    try:
-        # Fetch unitID from the subunit table
-        unit_response = supabase_client.from_("RefSubUnit").select("unitID").eq("subUnitID", subunit_id).execute()
-        if not unit_response.data:
-            return {"error": "Unit ID (chapterID) not found for the given subunit"}
-
-        chapter_id = unit_response.data[0]["unitID"]
-
-        for question in questions:
-            # Get the question type from the questionType table
-            question_type_response = supabase_client.from_("questionType").select("questionTypeID").eq("questionType", question["type"]).execute()
-            if not question_type_response.data:
-                return {"error": f"Question type '{question['type']}' not found"}
-            
-            question_type_id = question_type_response.data[0]["questionTypeID"]
-
-            # Prepare question data
-            question_data = {
-                "questionTypeID": question_type_id,
-                "skillLevelID": skill_level_id,
-                "lessonID": subunit_id,
-                "chapterID": chapter_id,
-                "questionText": question["question"], #ENTIRE QUESTION
-                "generated": True,
-                "questionCode": question.get("expected_output", ""), ##FOR CODING QUESTIONS?
-                #"correct_answer": question.get("correct_answer", ""),  # correct answer
-                #"options": json.dumps(question.get("options", {})),  # options
-               #"dropdowns": json.dumps(question.get("dropdowns", [])),  # dropdowns 
-                "Tags": "[]"  # empty for now
-            }
-
-            # Insert into Supabase
-            supabase_client.from_("Question").insert(question_data).execute()
-        
-        return {"message": "Questions stored successfully"}
+#uses google gemini API to evaluate user code...needs review
+def check_code(user_code, expected_output, constraints):
+    input_data = {
+        "type": "coding",
+        "question": "Code evaluation",
+        "expected_output": expected_output,
+        "constraints": constraints,
+        "user_answer": user_code
+    }
     
-    except Exception as e:
-        print(f"Error storing questions: {e}")
-        return {"error": str(e)}
-
-def check_code():
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY"),
     )
@@ -194,9 +162,7 @@ def check_code():
     contents = [
         types.Content(
             role="user",
-            parts=[
-                types.Part.from_text(text="""INSERT"""),
-            ],
+            parts=[ types.Part.from_text(text=json.dumps(input_data)) ],
         ),
     ]
     generate_content_config = types.GenerateContentConfig(
@@ -232,9 +198,15 @@ output Format json object, for each question:
         ],
     )
 
+    response_text = ""
     for chunk in client.models.generate_content_stream(
         model=model,
         contents=contents,
         config=generate_content_config,
     ):
-        print(chunk.text, end="")
+        response_text += chunk.text
+        
+    try:
+        return json.loads(response_text)
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse AI response"}
