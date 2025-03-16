@@ -1,70 +1,85 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
+import { useParams, useNavigate } from "react-router-dom";
 
-function Questions({ userId }) {
+const Questions = () => {
   const { subunitId } = useParams();
-
-  if (!subunitId) {
-    console.error("Subunit ID is undefined");
-    return <p>Error: Subunit not found.</p>;
-  }
-  if (!userId) {
-    console.error("User ID is undefined");
-    return <p>Error: User not found.</p>;
-  }
-
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userAnswers, setUserAnswers] = useState({});
   const [score, setScore] = useState(null);
 
-  const API_URL = `http://127.0.0.1:8080/subunits/${subunitId}/questions`;
+  const API_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/questions`;
 
   useEffect(() => {
-    const fetchQuestions = () => {
-      axios
-        .get(API_URL, { params: { user_id: userId } })
-        .then(response => {
-          setQuestions(response.data);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error("Error fetching questions:", error);
-          setLoading(false);
-        });
-    };
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in first.");
+      navigate("/login");
+      return;
+    }
 
-    fetchQuestions();
-  }, [subunitId, userId]);
+    fetch(API_URL, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setQuestions(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching questions:", error);
+        setLoading(false);
+      });
+  }, [subunitId]);
 
   const handleGenerateQuestions = () => {
-    axios
-      .post(`http://127.0.0.1:8080/subunits/${subunitId}/generate-questions`, {
-        user_id: userId,
+    const token = localStorage.getItem("token");
+
+    fetch(`http://127.0.0.1:8080/api/subunits/${subunitId}/generate-questions`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          setQuestions(data.questions);
+        }
       })
-      .then(response => {
-        setQuestions(prev => [...prev, ...response.data]);
-      })
-      .catch(error => {
+      .catch((error) => {
         console.error("Error generating questions:", error);
       });
   };
 
   const handleAnswer = (questionId, value) => {
-    setUserAnswers(prev => ({ ...prev, [questionId]: value }));
+    setUserAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleCheckAnswers = () => {
-    axios
-      .post("http://127.0.0.1:8080/check-answers", {
-        user_id: userId,
-        userAnswers: userAnswers,
+    const token = localStorage.getItem("token");
+
+    fetch("http://127.0.0.1:8080/api/check-answers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userAnswers }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          setScore(data.score);
+        }
       })
-      .then(response => {
-        setScore(response.data.score);
-      })
-      .catch(error => {
+      .catch((error) => {
         console.error("Error checking answers:", error);
       });
   };
@@ -73,16 +88,25 @@ function Questions({ userId }) {
 
   return (
     <div className="questions-container">
-      <h1 className="questions-title">Questions</h1>
+      <h1>Questions</h1>
       <div className="question-list">
-        {questions.length === 0 && !loading ? (
+        {questions.length === 0 ? (
           <p>No questions available. Try generating some.</p>
         ) : (
-          questions.map((question, index) => (
-            <div key={question.questionID || `question-${index}`}>
-              {[1, 2].includes(question.questionTypeID) && renderMCQAndFillBlanks(question, index)}
-              {question.questionTypeID === 3 && renderCoding(question, index)}
-              {question.questionTypeID === 4 && renderDropDown(question, index)}
+          questions.map((question) => (
+            <div key={question.questionID}>
+              <p>{question.questionText}</p>
+              {question.options && Object.keys(question.options).map((optionKey) => (
+                <label key={optionKey} style={{ display: "block", margin: "5px 0" }}>
+                  <input
+                    type="radio"
+                    name={`question-${question.questionID}`}
+                    value={optionKey}
+                    onChange={() => handleAnswer(question.questionID, optionKey)}
+                  />
+                  {question.options[optionKey]}
+                </label>
+              ))}
             </div>
           ))
         )}
@@ -91,9 +115,11 @@ function Questions({ userId }) {
       <button onClick={handleGenerateQuestions}>Generate More Questions</button>
       <button onClick={handleCheckAnswers}>Check Answers</button>
 
-      {score !== null && questions.length > 0 && <p>Your Score: {score} / {questions.length}</p>}
+      {score !== null && questions.length > 0 && (
+        <p>Your Score: {score} / {questions.length}</p>
+      )}
     </div>
   );
-}
+};
 
 export default Questions;

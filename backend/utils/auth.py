@@ -14,9 +14,10 @@ def verify_token():
     try:
         token = auth_header.split(" ")[1]
         decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-
-        # Return a dictionary with userID (not a tuple)
-        return {"id": decoded_token["userID"]} # Changed to "id" to match what's expected
+        
+        print("JWT_SECRET_KEY during decoding:", SECRET_KEY)#just used when testing
+        # Return user info dictionary (not a tuple for successful auth)
+        return {"id": decoded_token["userID"]}
 
     except jwt.ExpiredSignatureError:
         return {"error": "Token expired"}, 401

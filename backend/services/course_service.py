@@ -5,7 +5,10 @@ class CourseService:
     def get_courses():
         try:
             response = supabase_client.table("RefUnit").select("unitID, unitName, RefSubUnit(subUnitID, subUnitName)").execute()
-            return response.data if response.data else {"error": "No courses found"}, 200
+            if response.data:
+                return response.data, 200
+            else:
+                return {"error": "No courses found"}, 404
         except Exception as e:
             return {"error": str(e)}, 500
 
@@ -17,6 +20,9 @@ class CourseService:
                 "unitName": data.get("unitName"),
             }
             response = supabase_client.table("RefUnit").insert(new_course).execute()
-            return response.data if response.data else {"error": "Failed to add course"}, 201
+            if response.data:
+                return response.data, 201
+            else:
+                return {"error": "Failed to add course"}, 500
         except Exception as e:
             return {"error": str(e)}, 500

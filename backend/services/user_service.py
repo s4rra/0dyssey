@@ -13,15 +13,15 @@ class UserService:
     @staticmethod
     def signup(email, password, username, chosen_skill_level, dob):
         try:
-            # ✅ Step 1: Check if email already exists in "User" table
+            #Check if email already exists in User table
             existing_user = supabase_client.from_("User").select("userID").eq("Email", email).execute()
             if existing_user.data:
                 return {"error": "Email already registered."}, 400
 
-            # Generate UUID for userID
+            # manually generate a userID using UUID
             user_id = str(uuid.uuid4())
 
-            # ✅ Step 2: Insert user manually into "User" table with explicit userID
+            # Insert user manually into User table with explicit userID
             response = supabase_client.from_("User").insert({
                 "userID": user_id,
                 "Email": email,
@@ -46,22 +46,25 @@ class UserService:
         try:
             user_response = supabase_client.from_("User").select("userID, Password").eq("Email", email).execute()
             user_data = user_response.data
+            
 
             if not user_data:
                 return {"error": "Invalid email or password"}, 401  # User not found
 
             user = user_data[0]
 
-            # ✅ Step 2: Check if password matches (hashed check)
+            # Check if password matches (hashed check)
             if not check_password_hash(user["Password"], password):
                 return {"error": "Invalid email or password"}, 401
 
-            # ✅ Step 3: Generate a JWT token for session authentication
+            # JWT token for session authentication
             token_payload = {
                "userID": user["userID"],
                "exp": datetime.now(timezone.utc) + timedelta(hours=2)
             }
             access_token = jwt.encode(token_payload, SECRET_KEY, algorithm="HS256")
+            
+            print("JWT_SECRET_KEY during encoding:", SECRET_KEY)#just used when testing
 
             return {"message": "Login successful", "access_token": access_token}, 200
 
@@ -71,8 +74,8 @@ class UserService:
 
     @staticmethod
     def get_user_profile(user):
-        #fetch user db details from the database using session, to use in other functions(like currecnt skill level), can be helpful when we do the dashboard later
-        #supabase auth only stores email and password
+        # Fetch user details from the "User" table using the user session (JWT token)
+
         try:
             user_id = user["id"]  # extract userID from session
 

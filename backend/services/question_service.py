@@ -2,7 +2,7 @@ import json
 from config.settings import supabase_client
 from functions import generate_questions, check_code
 
-#handle fetching questions, ai questions and checking answers
+#Handles fetching, AI-based question generation, and answer validation
 class QuestionService:
     @staticmethod
     def get_questions(subunit_id, user):
@@ -26,13 +26,16 @@ class QuestionService:
                 .limit(5) #ik this will get the first 5 questions that match...
                 .execute()
             )
-            return response.data if response.data else {"error": "No questions found"}, 200
+            if response.data:
+                return response.data, 200
+            else:
+                return {"error": "No questions found"}, 404
         except Exception as e:
             return {"error": str(e)}, 500
 
     @staticmethod
     def generate_questions(subunit_id, user):
-        #Generates and stores questions based on current subunit description and user skill level
+        # Generates AI-based questions, then attempts to store them in the database
         try:
             user_id = user["id"]  # extract userID from session
             
@@ -52,7 +55,9 @@ class QuestionService:
 
             # Call AI function to generate questions
             questions = generate_questions(subunit_description, skill_level_id)
-
+            if "error" in questions:
+                return questions, 500
+            
             # Store generated questions
             return QuestionService.store_generated_questions(questions, skill_level_id, subunit_id)
         except Exception as e:
@@ -124,7 +129,7 @@ class QuestionService:
                     question = questions[q_id]
                     is_correct = False
                     
-                    # Check if it's a coding question
+                    # Check if it's a coding question (call check_code)
                     question_type_response = supabase_client.table("questionType").select("questionType").eq("questionTypeID", question["questionTypeID"]).execute()
                     if question_type_response.data and question_type_response.data[0]["questionType"] == "coding":
                         # Use the check_code function for coding questions

@@ -2,31 +2,41 @@ from flask import Blueprint, request, jsonify
 from services.question_service import QuestionService
 from utils.auth import verify_token
 
-#api endpoints for questions, uses session authentication
+# API endpoints for questions, protected using JWT authentication
+
 question_bp = Blueprint("question_bp", __name__)
 
 @question_bp.route("/subunits/<int:subunit_id>/questions", methods=["GET"])
 def get_subunit_questions(subunit_id):
-    user = verify_token()
-    if isinstance(user, dict):
-        return user
-
-    return jsonify(QuestionService.get_questions(subunit_id, user))
+    auth_result = verify_token()
+    # If verify_token returns a tuple, it's an error response
+    if isinstance(auth_result, tuple):
+        return jsonify(auth_result[0]), auth_result[1]
+    
+    user = auth_result
+    result, status_code = QuestionService.get_questions(subunit_id, user)
+    return jsonify(result), status_code
 
 @question_bp.route("/subunits/<int:subunit_id>/generate-questions", methods=["POST"])
 def generate_questions(subunit_id):
-    user = verify_token()
-    if isinstance(user, dict):
-        return user
+    auth_result = verify_token()
+    # If verify_token returns a tuple, it's an error response
+    if isinstance(auth_result, tuple):
+        return jsonify(auth_result[0]), auth_result[1]
     
-    return jsonify(QuestionService.generate_questions(subunit_id, user))
+    user = auth_result
+    result, status_code = QuestionService.generate_questions(subunit_id, user)
+    return jsonify(result), status_code
 
 @question_bp.route("/check-answers", methods=["POST"])
 def check_answers():
-    user = verify_token()
-    if isinstance(user, dict):
-       return user
+    auth_result = verify_token()
+    # If verify_token returns a tuple, it's an error response
+    if isinstance(auth_result, tuple):
+        return jsonify(auth_result[0]), auth_result[1]
 
+    user = auth_result
     data = request.json
-    return jsonify(QuestionService.check_answers(user, data.get("userAnswers")))
+    result, status_code = QuestionService.check_answers(user, data.get("userAnswers"))
+    return jsonify(result), status_code
 
