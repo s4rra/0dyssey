@@ -1,6 +1,6 @@
 import json
 from config.settings import supabase_client
-from functions import generate_questions, check_code
+from functions import *
 
 #Handles fetching, AI-based question generation, and answer validation
 class QuestionService:

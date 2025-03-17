@@ -5,7 +5,7 @@ import base64
 import os
 from google import genai
 from google.genai import types
-
+from question import *
 
 # Define the SubUnit class
 class SubUnit:
@@ -36,7 +36,7 @@ class CourseService:
         try:
             response = (
                 supabase_client.table("Question")
-                .select("*")
+                .select("data")
                 .eq("lessonID", 1)
                 .limit(5)
                 .execute()
@@ -69,23 +69,19 @@ class CourseService:
                 top_p=0.95,
                 top_k=40,
                 max_output_tokens=8192,
-                response_mime_type="text/plain",
+                response_mime_type="application/json",
                 system_instruction=[
-                    types.Part.from_text(text="""generate 1 python Multiple Choice question based on input
-
-                    output:
+                    types.Part.from_text(text="""generate 1 NEW python Multiple Choice question based on given input for context
+                    output json format example:
                     {
-                    \"question(number)\": {
-                        \"type\": \"multiple_choice\",
-                        \"question\": \"question text\",
-                        \"options\": {
-                        \"a\": \"option1\",
-                        \"b\": \"option2\",
-                        \"c\": \"option3\",
-                        \"d\": \"correct_answer\"
-                        },
-                        \"correct_answer\": \"a, b, c, or d\"
-                    }
+                            "question": "question text",
+                            "options": {
+                                "a": "option1",
+                                "b": "option2",
+                                "c": "option3",
+                                "d": "option4"
+                            },
+                            "correct_answer": "correct answer"
                     }
                     """),
                 ],
@@ -129,26 +125,26 @@ class CourseService:
                         unitID=subunit_data["unitID"],
                         subUnitContent=subunit_data.get("subUnitContent")  # Might be None
                         )
-                    if(True):
+                    if(subUnit.subUnitID >= 0):
                         prompt = (f"unitDescription:({unitDescription}), subUnitDescription: ({subUnit.subUnitDescription})")
                         print(prompt)
                         theGenQuestion = CourseService.generate_MCQ(prompt)
                         #print(theGenQuestion)
-                        #theGenQuestion = "Test"
-                        try:
-                            response = (
-                                supabase_client.table("Question")
-                                .insert([
-                                    {"questionTypeID": 1,
-                                     "lessonID": subUnit.subUnitID,
-                                     "data": theGenQuestion,
-                                     "generated": True}
-                                ])
-                                .execute()
-                            )
-                        except Exception as exception:
-                            return exception
-                        print(response.data)
+                        theGenQD = json.loads(theGenQuestion)
+                        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+                        print(theGenQD)
+                        
+                        question = Question(
+                            question_type_id = 1,
+                            lesson_id = subUnit.subUnitID,
+                            correct_answer = theGenQD["correct_answer"],
+                            question_text = theGenQD["question"], 
+                            options = theGenQD["options"]
+                        )
+                        
+                        print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+                        response = Question.persist(question)
+                        
                         print("=========================================")
                     subUnits.append(subUnit)
                     all_subunits.append(subUnit)
@@ -169,7 +165,6 @@ class CourseService:
         except Exception as e:
             return {"error": str(e)}, 500
 
-
-#courses = CourseService.get_courses()
+courses = CourseService.get_courses()
 #print(courses)
-call = CourseService.get_questions()
+#call = CourseService.get_questions()

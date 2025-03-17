@@ -55,7 +55,7 @@ class UserService:
 
             # Check if password matches (hashed check)
             if not check_password_hash(user["Password"], password):
-                return {"error": "Invalid email or password"}, 401
+                return {"error": "Invalid password"}, 401
 
             # JWT token for session authentication
             token_payload = {
