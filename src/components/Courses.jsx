@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom"; // Import Link for navigation
 
 function Courses() {
   const [courses, setCourses] = useState([]);
@@ -9,11 +10,11 @@ function Courses() {
   useEffect(() => {
     axios.get(API_URL)
       .then(response => {
-        console.log("Fetched courses:", response.data); // Debugging step
+        console.log("Fetched courses:", response.data);
         setCourses(response.data);
         setLoading(false);
       })
-      .catch((error) => {
+      .catch(error => {
         console.error("Error fetching courses:", error);
         setLoading(false);
       });
@@ -31,7 +32,11 @@ function Courses() {
             {course.RefSubUnit && course.RefSubUnit.length > 0 ? (
               <ul>
                 {course.RefSubUnit.map(subUnit => (
-                  <li key={subUnit.subUnitID}>{subUnit.subUnitName}</li>
+                  <li key={subUnit.subUnitID}>
+                    <Link to={`/subunit/${subUnit.subUnitID}`}>
+                      {subUnit.subUnitName}
+                    </Link>
+                  </li>
                 ))}
               </ul>
             ) : (

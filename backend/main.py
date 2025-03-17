@@ -3,6 +3,7 @@ from flask_cors import CORS
 import supabase
 import os
 from dotenv import load_dotenv
+import json
 
 
 load_dotenv()
@@ -85,17 +86,42 @@ def get_courses():
         print("Error fetching courses:", e)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/courses', methods=['POST'])
-def add_course():
+# @app.route('/courses', methods=['POST'])
+# def add_course():
+#     try:
+#         data = request.get_json()
+#         new_course = {
+#             "unitID": data.get("unitID"),
+#             "unitName": data.get("unitName"),
+#         }
+#         response = supabase_client.table("RefUnit").insert(new_course).execute()
+#         return jsonify(response.data), 201
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+@app.route('/subunit/<int:subunit_id>', methods=['GET'])
+def get_subunit_content(subunit_id):
     try:
-        data = request.get_json()
-        new_course = {
-            "unitID": data.get("unitID"),
-            "unitName": data.get("unitName"),
-        }
-        response = supabase_client.table("RefUnit").insert(new_course).execute()
-        return jsonify(response.data), 201
+        # Fetch the specific subunit with its content
+        response = supabase_client.from_("RefSubUnit").select("subUnitID, subUnitName, subUnitContent").eq("subUnitID", subunit_id).execute()
+        
+        if not response.data:
+            return jsonify({"error": "Subunit not found"}), 404
+            
+        subunit = response.data[0]
+        
+        # If the content is stored as JSON string, parse it
+        if isinstance(subunit.get('subUnitContent'), str):
+            try:
+                subunit['subUnitContent'] = json.loads(subunit['subUnitContent'])
+            except json.JSONDecodeError:
+                # If it's not valid JSON, keep it as is
+                pass
+                
+        return jsonify(subunit), 200
+        
     except Exception as e:
+        print(f"Error fetching subunit content: {e}")
         return jsonify({"error": str(e)}), 500
 
 

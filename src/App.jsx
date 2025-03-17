@@ -8,6 +8,8 @@ import Settings from "./components/Settings";
 import Page from "./components/Page";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import SubUnit from "./components/SubUnit";
+
 
 function App() {
     return (
@@ -22,6 +24,7 @@ function App() {
                 <Route path="/missions" element={<Page><Missions /></Page>} />
                 <Route path="/shop" element={<Page><Shop /></Page>} />
                 <Route path="/settings" element={<Page><Settings /></Page>} />
+                <Route path="/subunit/:subUnitId" element={<SubUnit />} />
             </Routes>
         </div>
     );

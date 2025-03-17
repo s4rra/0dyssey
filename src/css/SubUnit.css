@@ -1,0 +1,197 @@
+.subunit-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2d3748;
+    line-height: 1.6;
+    text-align: center; /* Center the overall container */
+  }
+  
+  .back-link {
+    display: inline-block;
+    color: #4a5568;
+    text-decoration: none;
+    margin-bottom: 2rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    width: auto;
+  }
+  
+  .back-link:hover {
+    color: #3182ce;
+  }
+  
+  .lesson-header {
+    margin-bottom: 2.5rem;
+    text-align: center; /* Center the header */
+  }
+  
+  .lesson-title {
+    font-size: 2.5rem;
+    color: #1a365d;
+    margin-bottom: 1rem;
+  }
+  
+  .lesson-description {
+    font-size: 1.1rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .content-title {
+    font-size: 1.75rem;
+    color: #2c5282;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: center; /* Center the title */
+  }
+  
+  .content-section {
+    margin-bottom: 2.5rem;
+    text-align: left; /* Text align left for content sections for readability */
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .section-heading {
+    font-size: 1.5rem;
+    color: #2b6cb0;
+    margin-bottom: 1rem;
+    text-align: center; /* Center section headings */
+  }
+  
+  .section-text {
+    font-size: 1.05rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .section-list {
+    margin-left: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: left; /* Ensure list items align left */
+  }
+  
+  .list-item {
+    margin-bottom: 0.75rem;
+    position: relative;
+  }
+  
+  .code-block {
+    background-color: #f7fafc;
+    border-radius: 8px;
+    margin: 1.5rem auto; /* Center the code blocks */
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    text-align: left; /* Keep code left-aligned */
+  }
+  
+  .code-example {
+    background-color: #2d3748;
+    color: #e2e8f0;
+    padding: 1.25rem;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  
+  .code-explanation {
+    padding: 1.25rem;
+    background-color: #edf2f7;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .code-explanation h4 {
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  .no-content-message {
+    text-align: center;
+    padding: 3rem 0;
+    color: #718096;
+    font-style: italic;
+  }
+  
+  .lesson-footer {
+    margin-top: 3rem;
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .quiz-button {
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: 0 4px 6px rgba(49, 130, 206, 0.25);
+  }
+  
+  .quiz-button:hover {
+    background-color: #2c5282;
+  }
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 50vh;
+  }
+  
+  .loading-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border-left-color: #3182ce;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+  
+  .error-container {
+    text-align: center;
+    padding: 3rem 0;
+  }
+  
+  .back-button {
+    display: inline-block;
+    background-color: #3182ce;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-top: 1.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .back-button:hover {
+    background-color: #2c5282;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
