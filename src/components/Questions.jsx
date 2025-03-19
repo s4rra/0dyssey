@@ -1,39 +1,33 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Questions() {
-  const { subunit_id } = useParams();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = `http://127.0.0.1:8080/questions/${subunit_id}`;  // Define API_URL
+  const navigate = useNavigate();
+  const API_URL = "http://127.0.0.1:8080/api/questions";
 
   useEffect(() => {
-    axios.get(API_URL)
-      .then(response => {
-        console.log("Fetched questions:", response.data);
-        setQuestions(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching questions:", error);
-        setLoading(false);
-      });
-  }, [API_URL, subunit_id]);  // Add API_URL and subunit_id to the dependency array
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in first.");
+      navigate("/login");
+      return;
+    }
 
-  const handleGenerateQuestions = () => {
-    axios.post("http://127.0.0.1:8080/generate-questions", {
-      subunit_id: subunit_id,
-      skill_level: "beginner"  // Adjust based on user selection
+    fetch(API_URL, {
+      headers: { Authorization: `Bearer ${token}` },
     })
-      .then(response => {
-        console.log("Generated questions:", response.data);
-        setQuestions([...questions, ...response.data]);
+      .then((res) => res.json())
+      .then((data) => {
+        setQuestions(data);
+        setLoading(false);
       })
-      .catch((error) => {
-        console.error("Error generating questions:", error);
+      .catch((err) => {
+        console.error("Error fetching questions:", err);
+        setLoading(false);
       });
-  };
+  }, []);
 
   if (loading) return <p>Loading...</p>;
 
@@ -41,13 +35,28 @@ function Questions() {
     <div>
       <h2>Questions</h2>
       <ul>
-        {questions.map(question => (
-          <li key={question.questionID}>
-            <p>{question.questionText}</p>
+        {questions.map((question) => (
+          <li key={question.unitID}>
+            <h3>{question.unitName}</h3>
+            {question.RefSubUnit && question.RefSubUnit.length > 0 ? (
+              <ul>
+                {question.RefSubUnit.map((subUnit) => (
+                  <li key={subUnit.subUnitID}>
+                    <button
+                      onClick={() => navigate(`/subunit/${subUnit.subUnitID}/questions`)}
+                      style={{ background: "none", border: "none", color: "blue", textDecoration: "underline", cursor: "pointer" }}
+                    >
+                      {subUnit.subUnitName}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No available</p>
+            )}
           </li>
         ))}
       </ul>
-      <button onClick={handleGenerateQuestions}>Generate More Questions</button>
     </div>
   );
 }

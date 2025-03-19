@@ -6,7 +6,7 @@ function Page({ children }) {
   return (
     <div className="dashboard">
       <aside className="sidebar">
-        <Link to="/" className="logo">
+        <Link to="/dashboard" className="logo">
           Odyssey
         </Link>
         <nav>
