@@ -69,21 +69,22 @@ def login():
         streak_length = user.get("streakLength", 0)
         last_login = None
         
-        print(f"User ID: {user_id} (Type: {type(user_id)})")
-        existing_user = supabase_client.from_("User").select("*").eq("userID", user_id).execute()
-        print("Existing user data before update:", existing_user)
         
 
         if user.get("lastLogin"):
             last_login = datetime.datetime.fromisoformat(user["lastLogin"]).date()
+
         if last_login is None:
-            new_streak = 1
+            new_streak = 0
+
         elif last_login == current_date:  
             new_streak = streak_length
+
         elif (current_date - last_login).days == 1:
             new_streak = streak_length + 1
+
         else:
-            new_streak = 1
+            new_streak = 0
         
         
        
