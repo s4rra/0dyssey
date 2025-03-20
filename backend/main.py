@@ -4,7 +4,7 @@ import supabase
 import os
 from dotenv import load_dotenv
 import json
-
+import datetime
 
 load_dotenv()
 app = Flask(__name__)
@@ -53,12 +53,50 @@ def login():
         return jsonify({"error": "Email and password are required"}), 400
 
     try:
-        response = supabase_client.from_("User").select("userID").eq("Email", email).eq("Password", password).execute()
+        
+        user_response = supabase_client.from_("User").select("userID, streakLength, lastLogin").eq("Email", email).eq("Password", password).execute()
 
-        if response.data:
-            return jsonify({"message": "Login successful", "user_id": response.data[0]["userID"]}), 200
-        else:
+        if not user_response.data:
             return jsonify({"error": "Invalid email or password"}), 401
+        
+        user = user_response.data[0]
+        user_id = user["userID"]
+        
+        
+        current_date = datetime.datetime.now(datetime.timezone.utc).date()
+        
+        
+        streak_length = user.get("streakLength", 0)
+        last_login = None
+        
+        print(f"User ID: {user_id} (Type: {type(user_id)})")
+        existing_user = supabase_client.from_("User").select("*").eq("userID", user_id).execute()
+        print("Existing user data before update:", existing_user)
+        
+
+        if user.get("lastLogin"):
+            last_login = datetime.datetime.fromisoformat(user["lastLogin"]).date()
+        if last_login is None:
+            new_streak = 1
+        elif last_login == current_date:  
+            new_streak = streak_length
+        elif (current_date - last_login).days == 1:
+            new_streak = streak_length + 1
+        else:
+            new_streak = 1
+        
+        
+       
+        update_response = supabase_client.from_("User").update({
+            "streakLength": new_streak,
+            "lastLogin": current_date.isoformat()
+        }).eq("userID", user_id).execute()
+        
+        return jsonify({
+            "message": "Login successful", 
+            "user_id": user_id,
+            "streak": new_streak
+        }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -127,3 +165,4 @@ def get_subunit_content(subunit_id):
 
 if __name__ == '__main__':
     app.run(port=8080)
+    
