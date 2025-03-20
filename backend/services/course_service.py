@@ -4,7 +4,7 @@ class CourseService:
     @staticmethod
     def get_courses():
         try:
-            response = supabase_client.table("RefUnit").select("unitID, unitName, RefSubUnit(subUnitID, subUnitName)").execute()
+            response = supabase_client.table("RefUnit").select("unitID, unitName,unitDescription, RefSubUnit(subUnitID, subUnitName)").execute()
             if response.data:
                 return response.data, 200
             else:
