@@ -6,7 +6,7 @@ import os
 from google import genai
 from google.genai import types
 from question import *
-
+#this file is a testing file
 # Define the SubUnit class
 class SubUnit:
     def __init__(self, subUnitID: int, subUnitName: str, subUnitDescription: str, unitID: int, subUnitContent: Optional[dict]):
@@ -65,8 +65,8 @@ class CourseService:
                 ),
             ]
             generate_content_config = types.GenerateContentConfig(
-                temperature=1,
-                top_p=0.95,
+                temperature=0.2,
+                top_p=0.5,
                 top_k=40,
                 max_output_tokens=8192,
                 response_mime_type="application/json",
@@ -102,64 +102,60 @@ class CourseService:
     @staticmethod
     def get_courses():
         try:
-            response = supabase_client.table("RefUnit").select("*, RefSubUnit(*)").execute()
+            #response = supabase_client.table("RefUnit").select("*, RefSubUnit(*)").execute()
+            response = (
+                supabase_client
+                .table("RefSubUnit")
+                .select("*, RefUnit(unitDescription)")
+                .execute()
+                )
+            
             ###########
                      
             data = response.data
-            #print(f"DATA: {data}")
+            print(f"DATA: {data}")
             # Convert JSON into a list of objects
-            units = []
-            all_subunits = []
+            #units = []
+            #all_subunits = []
+            subUnits = []
 
-            for unit_data in data:
-                unitID = unit_data["unitID"]
-                unitName = unit_data["unitName"]
-                unitDescription = unit_data["unitDescription"]
-                #print(f"UNITDESC ={unitDescription}")
-                subUnits = []
-                for subunit_data in unit_data["RefSubUnit"]:
-                    subUnit = SubUnit(
-                        subUnitID=subunit_data["subUnitID"],
-                        subUnitName=subunit_data["subUnitName"],
-                        subUnitDescription=subunit_data["subUnitDescription"],
-                        unitID=subunit_data["unitID"],
-                        subUnitContent=subunit_data.get("subUnitContent")  # Might be None
-                        )
-                    if(subUnit.subUnitID >= 0):
-                        prompt = (f"unitDescription:({unitDescription}), subUnitDescription: ({subUnit.subUnitDescription})")
-                        print(prompt)
-                        theGenQuestion = CourseService.generate_MCQ(prompt)
-                        #print(theGenQuestion)
-                        theGenQD = json.loads(theGenQuestion)
-                        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-                        print(theGenQD)
-                        
-                        question = Question(
-                            question_type_id = 1,
-                            lesson_id = subUnit.subUnitID,
-                            correct_answer = theGenQD["correct_answer"],
-                            question_text = theGenQD["question"], 
-                            options = theGenQD["options"]
-                        )
-                        
-                        print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
-                        response = Question.persist(question)
-                        
-                        print("=========================================")
-                    subUnits.append(subUnit)
-                    all_subunits.append(subUnit)
+            for subunit_data in data:
+                unitDescription = subunit_data["unitDescription"]
+                print(f"UNITDESC ={unitDescription}")
+                subUnit = SubUnit(
+                    subUnitID=subunit_data["subUnitID"],
+                    subUnitName=subunit_data["subUnitName"],
+                    subUnitDescription=subunit_data["subUnitDescription"],
+                    unitID=subunit_data["unitID"],
+                    subUnitContent=subunit_data.get("subUnitContent")  # Might be None
+                    )
+                subUnits.append(subUnit)
+                if(subUnit.subUnitID <= 5):
+                    prompt = (f"unitDescription:({unitDescription}), subUnitDescription: ({subUnit.subUnitDescription}), subUnitID: ({subUnit.subUnitID})")
+                    print(prompt)
+                    """ theGenQuestion = CourseService.generate_MCQ(prompt)
+                    #print(theGenQuestion)
+                    theGenQD = json.loads(theGenQuestion)
+                    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+                    print(theGenQD)
+                    
+                    question = Question(
+                        question_type_id = 1,
+                        lesson_id = subUnit.subUnitID,
+                        correct_answer = theGenQD["correct_answer"],
+                        question_text = theGenQD["question"], 
+                        options = theGenQD["options"]
+                    )
+                    
+                    print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+                    response = Question.persist(question)
+                    
+                    print("=========================================") """
                 
-                unit = Unit(unitID, unitName, unitDescription, subUnits)
-                units.append(unit)
-
             # Display results
-            """  print("All Units:")
-            for unit in units:
-                print(unit)
-
             print("\nAll SubUnits:")
-            for subunit in all_subunits:
-                print(subunit) """
+            for subunit in subUnits:
+                print(subunit)
 
             ###########
         except Exception as e:

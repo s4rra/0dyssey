@@ -8,9 +8,9 @@ class QuestionService:
     def get_questions(subunit_id, user):
         #fetches questions based on user's skill level and subunit
         try:
-            """user_id = user["id"]  # extract userID from session
+            user_id = user["id"]  # extract userID from session
             
-             # Fetch user skill level
+            """  # Fetch user skill level
             user_response = supabase_client.table("User").select("chosenSkillLevel").eq("userID", user_id).execute()
             if not user_response.data:
                 return {"error": "User not found"}, 404
@@ -21,7 +21,7 @@ class QuestionService:
             response = (
                 supabase_client.table("Question")
                 .select("*")
-                .eq("lessonID", 1)
+                .eq("lessonID", subunit_id)
                 .limit(5) #ik this will get the first 5 questions that match...
                 .execute()
             )
@@ -39,31 +39,24 @@ class QuestionService:
         try:
             user_id = user["id"]  # extract userID from session
             
-            # fetch subunit subunit_description
-            subunit_response = supabase_client.table("RefSubUnit").select("subUnitDescription").eq("subUnitID", subunit_id).execute()
-            if not subunit_response.data:
-                return {"error": "Subunit not found"}, 404
-
-            subunit_description = subunit_response.data[0]["subUnitDescription"]
-
-            # fetch user skill level
+            """ # fetch user skill level
             user_response = supabase_client.table("User").select("chosenSkillLevel").eq("userID", user_id).execute()
             if not user_response.data:
                 return {"error": "User not found"}, 404
 
-            skill_level_id = user_response.data[0]["chosenSkillLevel"]
+            skill_level_id = user_response.data[0]["chosenSkillLevel"] """
 
             # Call AI function to generate questions
-            questions = generate_questions(subunit_description, skill_level_id)
+            """ questions = generate_questions(subunit_description, skill_level_id)
             if "error" in questions:
-                return questions, 500
+                return questions, 500 """
             
             # Store generated questions
-            return QuestionService.store_generated_questions(questions, skill_level_id, subunit_id)
+            #return QuestionService.store_generated_questions(questions, skill_level_id, subunit_id)
         except Exception as e:
             return {"error": str(e)}, 500
 
-    @staticmethod
+    """ @staticmethod
     def store_generated_questions(questions, skill_level_id, subunit_id):
         #Stores AI-generated questions into the database
         try:
@@ -104,8 +97,8 @@ class QuestionService:
             return {"message": "Questions stored successfully", "questions": stored_questions}, 200
         except Exception as e:
             return {"error": str(e)}, 500
-
-    @staticmethod
+ """
+    """ @staticmethod
     def check_answers(user, user_answers):
         try:
             user_id = user["id"]  # extract userID from session
@@ -155,5 +148,5 @@ class QuestionService:
             return {"score": score, "total": len(user_answers), "results": results}, 200
         except Exception as e:
             return {"error": str(e)}, 500
-        
-response =QuestionService.get_questions(1,"")
+         """
+#response =QuestionService.get_questions(1,"")

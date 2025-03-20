@@ -38,7 +38,7 @@ function Courses() {
         {courses.map((course) => (
           <li key={course.unitID}>
             <h3>{course.unitName}</h3>
-            {course.RefSubUnit && course.RefSubUnit.length > 0 ? (
+            {course.RefSubUnit && course.RefSubUnit.length >= 0 ? (
               <ul>
                 {course.RefSubUnit.map((subUnit) => (
                   <li key={subUnit.subUnitID}>
