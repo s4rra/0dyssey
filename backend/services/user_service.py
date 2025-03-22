@@ -74,17 +74,22 @@ class UserService:
 
     @staticmethod
     def get_user_profile(user):
-        # Fetch user details from the "User" table using the user session (JWT token)
-
         try:
-            user_id = user["id"]  # extract userID from session
+            user_id = user["id"]
 
-            # Fetch user data from our user table
-            response = supabase_client.table("User").select("*").eq("userID", user_id).execute()
+            response = (
+                supabase_client
+                .table("User")
+                .select("*, RefUnit(unitDescription), RefSubUnit(subUnitDescription)")
+                .eq("userID", user_id)
+                .single()  #one row only
+                .execute()
+            )
+
             if not response.data:
                 return {"error": "User not found"}, 404
 
-            return response.data[0], 200
+            return response.data, 200  #no need for [0] after .single()
 
         except Exception as e:
             return {"error": str(e)}, 500
