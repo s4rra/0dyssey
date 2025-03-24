@@ -85,7 +85,7 @@ class UserService:
                 .single()  #one row only
                 .execute()
             )
-
+            print("get_user_profile() received user:", user)
             if not response.data:
                 return {"error": "User not found"}, 404
 

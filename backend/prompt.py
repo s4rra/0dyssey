@@ -84,45 +84,48 @@ class Questions:
                 max_output_tokens=2000,
                 response_mime_type="application/json",
                 response_schema=genai.types.Schema(
-                    type = genai.types.Type.OBJECT,
-                    required = ["question", "options", "correct_answer", "tags"],
-                    properties = {
-                        "question": genai.types.Schema(
-                            type = genai.types.Type.STRING,
-                        ),
-                        "options": genai.types.Schema(
-                            type = genai.types.Type.OBJECT,
-                            required = ["a", "b", "c", "d"],
-                            properties = {
-                                "a": genai.types.Schema(
-                                    type = genai.types.Type.STRING,
-                                ),
-                                "b": genai.types.Schema(
-                                    type = genai.types.Type.STRING,
-                                ),
-                                "c": genai.types.Schema(
-                                    type = genai.types.Type.STRING,
-                                ),
-                                "d": genai.types.Schema(
-                                    type = genai.types.Type.STRING,
-                                ),
-                            },
-                        ),
-                        "correct_answer": genai.types.Schema(
-                            type = genai.types.Type.STRING,
-                        ),
-                        "tags": genai.types.Schema(
-                            type = genai.types.Type.ARRAY,
-                            items = genai.types.Schema(
+                    type = genai.types.Type.ARRAY,
+                    items = genai.types.Schema(
+                        type = genai.types.Type.OBJECT,
+                        required = ["question", "options", "correct_answer", "tags"],
+                        properties = {
+                            "question": genai.types.Schema(
                                 type = genai.types.Type.STRING,
                             ),
-                        ),
-                    },
+                            "options": genai.types.Schema(
+                                type = genai.types.Type.OBJECT,
+                                required = ["a", "b", "c", "d"],
+                                properties = {
+                                    "a": genai.types.Schema(
+                                        type = genai.types.Type.STRING,
+                                    ),
+                                    "b": genai.types.Schema(
+                                        type = genai.types.Type.STRING,
+                                    ),
+                                    "c": genai.types.Schema(
+                                        type = genai.types.Type.STRING,
+                                    ),
+                                    "d": genai.types.Schema(
+                                        type = genai.types.Type.STRING,
+                                    ),
+                                },
+                            ),
+                            "correct_answer": genai.types.Schema(
+                                type = genai.types.Type.STRING,
+                            ),
+                            "tags": genai.types.Schema(
+                                type = genai.types.Type.ARRAY,
+                                items = genai.types.Schema(
+                                    type = genai.types.Type.STRING,
+                                ),
+                            ),
+                        },
+                    ),
                 ),
                 system_instruction=[
-                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 1 unique Python question for students aged 10–17. Your goal is to generate structured question strictly based on the provided context. 
-                    Make sure the question is directly related to the subunit description. Keep it fun, educational, and clear!"""),
-                ],
+                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 unique Python multiple-choice questions in a JSON array,
+                                         each question must follow the schema exactly. Respond with a JSON array only. Make questions educational, age-appropriate (10–17),
+                                         fun, and directly tied to the provided subunit description!"""),],
             )
 
             response = ""
@@ -163,29 +166,33 @@ class Questions:
                 max_output_tokens=2000,
                 response_mime_type="application/json",
                 response_schema=genai.types.Schema(
-                    type = genai.types.Type.OBJECT,
-                    required = ["question", "correct_answer", "constraints", "tags"],
-                    properties = {
-                        "question": genai.types.Schema(
-                            type = genai.types.Type.STRING,
-                        ),
-                        "correct_answer": genai.types.Schema(
-                            type = genai.types.Type.STRING,
-                        ),
-                        "constraints": genai.types.Schema(
-                            type = genai.types.Type.STRING,
-                        ),
-                        "tags": genai.types.Schema(
-                            type = genai.types.Type.ARRAY,
-                            items = genai.types.Schema(
+                    type = genai.types.Type.ARRAY,
+                    items = genai.types.Schema(
+                        type = genai.types.Type.OBJECT,
+                        required = ["question", "correct_answer", "constraints", "tags"],
+                        properties = {
+                            "question": genai.types.Schema(
                                 type = genai.types.Type.STRING,
                             ),
-                        ),
-                    },
+                            "correct_answer": genai.types.Schema(
+                                type = genai.types.Type.STRING,
+                            ),
+                            "constraints": genai.types.Schema(
+                                type = genai.types.Type.STRING,
+                            ),
+                            "tags": genai.types.Schema(
+                                type = genai.types.Type.ARRAY,
+                                items = genai.types.Schema(
+                                    type = genai.types.Type.STRING,
+                                ),
+                            ),
+                        },
+                    ),
                 ),
                 system_instruction=[
-                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 1 unique Python question for students aged 10–17. Your goal is to generate structured question strictly based on the provided context. 
-                    Make sure the question is directly related to the subunit description. Keep it fun, educational, and clear!"""),
+                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 Python coding questions
+                                         in a JSON array. Follow the schema exactly. Each question must ask the student to write code.
+                                         Stick to the subunit description only. Keep it educational, age-appropriate (10–17), and fun """),
                 ],
             )
 
@@ -286,12 +293,6 @@ class Questions:
         
     def get_questions(subunit_id, user):
         try:
-            #user_id = user["id"]  # extract userID from session
-            
-            # Fetch user skill level from session
-            if "chosenSkillLevel" not in user:
-               return {"error": "Skill level not provided in user session"}, 400
-
             skill_level_id = user["chosenSkillLevel"]
 
             # Determine question types to fetch based on skill level
@@ -323,59 +324,82 @@ class Questions:
     
     def generate_questions(subunit_id, user):
         try:
-            user_profile, status = UserService.get_user_profile(user)
-            if status != 200:
-                return user_profile, status  
-            
-            unitDescription = user_profile["RefUnit"]["unitDescription"]
-            subUnitDescription = user_profile["RefSubUnit"]["subUnitDescription"]
+            unitDescription = user["RefUnit"]["unitDescription"]
+            subUnitDescription = user["RefSubUnit"]["subUnitDescription"]
 
             prompt = f"generate new questions for: unitDescription:({unitDescription}), subUnitDescription: ({subUnitDescription})"
             print(prompt)
 
             question_ids = []  # Store generated question IDs
 
-            # Generate and store MCQ
-            theGenQuestion = Questions.generate_MCQ(prompt)
-            theGenQD = json.loads(theGenQuestion)
-            print("===================================")
-            print(theGenQD)
+            # Generate and store MCQs
+            mcq_data = json.loads(Questions.generate_MCQ(prompt))
+            print("=== Generated MCQs ===")
+            print(mcq_data)
 
-            mcq_store = Questions(
-                question_type_id=1,
-                lesson_id=subunit_id,
-                question_text=theGenQD["question"],
-                correct_answer=theGenQD["correct_answer"],
-                options=theGenQD["options"],
-                constraints="", 
-                tags=theGenQD["tags"],
-                generated=True
-            )
-            mcq_response = Questions.persist(mcq_store)
-            if not mcq_response["success"]:
-                return mcq_response, mcq_response.get("status", 500)
-            question_ids.append(mcq_response["data"][0]["questionID"]) # store generated MCQ ID
- 
-            theGenCodingQuestion = Questions.generate_coding(prompt)
-            theGencodingD = json.loads(theGenCodingQuestion)
-            print("==================================")
-            print(theGencodingD)
+            for q in mcq_data:
+                mcq_store = Questions(
+                    question_type_id=1,
+                    lesson_id=subunit_id,
+                    question_text=q["question"],
+                    correct_answer=q["correct_answer"],
+                    options=q["options"],
+                    constraints="",  # MCQs don't have constraints
+                    tags=q["tags"],
+                    generated=True
+                )
+                response = Questions.persist(mcq_store)
+                if not response["success"]:
+                    return response, response.get("status", 500)
+                question_ids.append(response["data"][0]["questionID"])
+            
+            # Generate and store coding questions
+            coding_data = json.loads(Questions.generate_coding(prompt))
+            print("=== Generated Coding Questions ===")
+            print(coding_data)
 
-            coding_store = Questions(
-                question_type_id=2,
-                lesson_id=subunit_id,
-                question_text=theGencodingD["question"],
-                correct_answer=theGencodingD["correct_answer"],
-                options={},
-                constraints=theGencodingD["constraints"],
-                tags=theGencodingD["tags"],
-                generated=True
-            )
-            coding_response = Questions.persist(coding_store)
-            if not coding_response["success"]:
-                return coding_response, coding_response.get("status", 500)
-            question_ids.append(coding_response["data"][0]["questionID"])# store generated Coding ID
+            for q in coding_data:
+                coding_store = Questions(
+                    question_type_id=2,
+                    lesson_id=subunit_id,
+                    question_text=q["question"],
+                    correct_answer=q["correct_answer"],
+                    options={},  # Coding has no options
+                    constraints=q["constraints"],
+                    tags=q["tags"],
+                    generated=True
+                )
+                response = Questions.persist(coding_store)
+                if not response["success"]:
+                    return response, response.get("status", 500)
+                question_ids.append(response["data"][0]["questionID"])
 
             return {"message": "Questions generated and stored successfully", "question_ids": question_ids}, 200
         except Exception as e:
             return {"error": str(e)}, 500
+
+#testing
+""" if __name__ == "__main__":
+    import json
+
+    # Sample test prompt
+    prompt = "Unit Description: Understanding how Python stores and processes different types of data.SubUnit Description: Introduces variables, naming rules, and assignment in Python."
+    prompt2 = "Unit Description: Using decision-making structures to control program flow. SubUnit Description: Introduces if, elif, and else statements."
+    # Call generate
+    #raw_response = Questions.generate_MCQ(prompt)
+    raw_response = Questions.generate_coding(prompt2)
+
+    # Parse JSON (should be a list of 4 questions)
+    try:
+        questions = json.loads(raw_response)
+        print("\n\n Total Questions Generated:", len(questions))
+        for i, q in enumerate(questions, 1):
+            print(f"\n Question {i}:")
+            print("Q:", q["question"])
+            #print("Options:", q["options"])
+            print("Constraints:", q["constraints"])
+            print("Correct Answer:", q["correct_answer"])
+            print("Tags:", q["tags"])
+    except Exception as e:
+        print("\n failed to parse or print questions:", e)
+        print("Raw Response:", raw_response) """
