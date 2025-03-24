@@ -78,7 +78,7 @@ class Questions:
                 ),
             ]
             generate_content_config = types.GenerateContentConfig(
-                temperature=0.3,
+                temperature=0.5,
                 top_p=0.9,
                 top_k=40,
                 max_output_tokens=2000,
@@ -125,7 +125,7 @@ class Questions:
                 system_instruction=[
                     types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 unique Python multiple-choice questions in a JSON array,
                                          each question must follow the schema exactly. Respond with a JSON array only. Make questions educational, age-appropriate (10–17),
-                                         fun, and directly tied to the provided subunit description!"""),],
+                                         fun, and directly tied to the provided subunit description! Avoid repeating the same question with slight rewording"""),],
             )
 
             response = ""
@@ -160,7 +160,7 @@ class Questions:
                 ),
             ]
             generate_content_config = types.GenerateContentConfig(
-                temperature=0.3,
+                temperature=0.5,
                 top_p=0.9,
                 top_k=40,
                 max_output_tokens=2000,
@@ -192,7 +192,8 @@ class Questions:
                 system_instruction=[
                     types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 Python coding questions
                                          in a JSON array. Follow the schema exactly. Each question must ask the student to write code.
-                                         Stick to the subunit description only. Keep it educational, age-appropriate (10–17), and fun """),
+                                         Stick to the subunit description only. Keep it educational, age-appropriate (10–17), and fun. 
+                                         Avoid repeating the same question with slight rewording"""),
                 ],
             )
 
