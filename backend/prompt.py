@@ -56,12 +56,11 @@ class Questions:
                     }
                 ])
                 .execute()
-                .cache_control("no-cache") 
             )
             print(response.data)
-            return response
+            return {"success": True, "data": response.data}
         except Exception as exception:
-            return {"error": str(exception), "status": 500}
+            return {"success": False, "error": str(exception), "status": 500}
 
     def generate_MCQ(prompt):
         try:
@@ -324,9 +323,6 @@ class Questions:
     
     def generate_questions(subunit_id, user):
         try:
-            if "currentUnit" not in user or "currentSubUnit" not in user:
-                return {"error": "Missing required user session data"}, 400
-            
             user_profile, status = UserService.get_user_profile(user)
             if status != 200:
                 return user_profile, status  
@@ -351,12 +347,14 @@ class Questions:
                 question_text=theGenQD["question"],
                 correct_answer=theGenQD["correct_answer"],
                 options=theGenQD["options"],
-                constraints={}, 
+                constraints="", 
                 tags=theGenQD["tags"],
                 generated=True
             )
             mcq_response = Questions.persist(mcq_store)
-            question_ids.append(mcq_response.data[0]["questionID"])  # store generated MCQ ID
+            if not mcq_response["success"]:
+                return mcq_response, mcq_response.get("status", 500)
+            question_ids.append(mcq_response["data"][0]["questionID"]) # store generated MCQ ID
  
             theGenCodingQuestion = Questions.generate_coding(prompt)
             theGencodingD = json.loads(theGenCodingQuestion)
@@ -374,8 +372,10 @@ class Questions:
                 generated=True
             )
             coding_response = Questions.persist(coding_store)
-            question_ids.append(coding_response.data[0]["questionID"])  # store generated Coding ID
+            if not coding_response["success"]:
+                return coding_response, coding_response.get("status", 500)
+            question_ids.append(coding_response["data"][0]["questionID"])# store generated Coding ID
 
-            return {"message": "Questions generated and stored successfully", "question_ids": question_ids}
+            return {"message": "Questions generated and stored successfully", "question_ids": question_ids}, 200
         except Exception as e:
             return {"error": str(e)}, 500
