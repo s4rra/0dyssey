@@ -291,38 +291,55 @@ class Questions:
             "details": str(e),
             "status": 500
         }
-        
+       
     def get_questions(subunit_id, user):
         try:
             skill_level_id = user["chosenSkillLevel"]
+            questions = []
 
-            # Determine question types to fetch based on skill level
-            if skill_level_id == 1:
-                question_type = [1]  # Only MCQ (for now)
-            elif skill_level_id == 2:
-                question_type = [1, 2]  # Both MCQ and Coding (for now)
-            elif skill_level_id == 3:
-                question_type = [2]  # Only Coding
-            else:
+            if skill_level_id not in [1, 2, 3]:
                 return {"error": "Invalid skill level provided"}, 400
-            
-            # Fetch questions that match the user's skill level and lesson
-            response = (
-                supabase_client.table("Question")
-                .select("*")
-                .eq("lessonID", subunit_id)
-                .in_("questionTypeID", question_type)
-                .execute()
-            )
-            
-            if response.data:
-                print(response.data)
-                return response.data, 200
-            else:
-                return {"error": "No questions found for this skill level"}, 404
+
+            # Fetch MCQs
+            if skill_level_id in [1, 2]:
+                limit = 4 if skill_level_id == 1 else 2
+                mcq_response = (
+                    supabase_client.table("Question")
+                    .select("questionID, questionText, correctAnswer, options, questionTypeID")
+                    .eq("lessonID", subunit_id)
+                    .eq("questionTypeID", 1)
+                    .eq("generated", True)
+                    .order("created_at", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                if mcq_response.data:
+                    questions.extend(mcq_response.data)
+
+            # Fetch Coding
+            if skill_level_id in [2, 3]:
+                limit = 4 if skill_level_id == 3 else 2
+                coding_response = (
+                    supabase_client.table("Question")
+                    .select("questionID, questionText, correctAnswer, constraints, questionTypeID")
+                    .eq("lessonID", subunit_id)
+                    .eq("questionTypeID", 2)
+                    .eq("generated", True)
+                    .order("created_at", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                if coding_response.data:
+                    questions.extend(coding_response.data)
+
+            if not questions:
+                return {"error": "No questions found"}, 404
+
+            return questions, 200
+
         except Exception as e:
             return {"error": str(e)}, 500
-    
+
     def generate_questions(subunit_id, user):
         try:
             unitDescription = user["RefUnit"]["unitDescription"]
