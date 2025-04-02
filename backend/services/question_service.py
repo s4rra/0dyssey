@@ -190,10 +190,10 @@ class Questions:
                     ),
                 ),
                 system_instruction=[
-                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 Python coding questions
-                                         in a JSON array. Follow the schema exactly. Each question must ask the student to write code.
-                                         Stick to the subunit description only. Keep it educational, age-appropriate (10–17), and fun. 
-                                         Avoid repeating the same question with slight rewording"""),
+                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 Python short coding questions
+                                         in a JSON array. Follow the schema exactly. Each question must ask the student to write code, not a full program.
+                                         Stick to the subunit description content scope ONLY. Keep it educational, age-appropriate (10–17), and fun. 
+                                         Avoid repeating the same question with slight rewording!"""),
                 ],
             )
 
@@ -263,9 +263,20 @@ class Questions:
 
     def generate_questions(subunit_id, user):
         try:
-            unitDescription = user["RefUnit"]["unitDescription"]
-            subUnitDescription = user["RefSubUnit"]["subUnitDescription"]
+            # Fetch subunit info
+            subunit_info = (
+            supabase_client.table("RefSubUnit")
+                    .select("subUnitDescription, RefUnit(unitDescription)")
+                    .eq("subUnitID", subunit_id)
+                    .single()
+                    .execute()
+            )
 
+            if not subunit_info.data:
+                return {"error": "Subunit not found"}, 404
+
+            unitDescription = subunit_info.data["RefUnit"]["unitDescription"]
+            subUnitDescription = subunit_info.data["subUnitDescription"]
             prompt = f"generate new questions for: unitDescription:({unitDescription}), subUnitDescription: ({subUnitDescription})"
             print(prompt)
 

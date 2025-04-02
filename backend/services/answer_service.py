@@ -4,24 +4,16 @@ import json
 from google import genai
 from google.genai import types
 from config.settings import supabase_client
-from services.user_service import *
-from services.question_service import *
 
 class Answer:
-    def __init__(self, 
-                 question_id: int, 
-                 user_id: int, 
-                 user_answer: str, 
-                 question_type_id: int, 
-                 correct_answer: str,
-                 constraints: str = None):
+    def __init__(self, question_id, user_id, user_answer, correct_answer, question_type_id, constraints=""):
         self.question_id = question_id
         self.user_id = user_id
         self.user_answer = user_answer
-        self.question_type_id = question_type_id
         self.correct_answer = correct_answer
-        self.constraints = constraints
-        self.is_correct = False
+        self.question_type_id = question_type_id 
+        self.constraints = constraints           
+        self.is_correct = None
         self.feedback = None
         self.hint = None
 
@@ -41,14 +33,14 @@ class Answer:
                 ),
             ]
             generate_content_config = types.GenerateContentConfig(
-                temperature=0,
+                temperature=0.2,
                 top_p=1,
                 top_k=40,
                 max_output_tokens=500,
                 response_mime_type="application/json",
                 response_schema=genai.types.Schema(
                     type = genai.types.Type.OBJECT,
-                    required = ["questionid", "user_answer", "hint", "feedback"],
+                    required = ["questionid", "user_answer", "hint", "feedback", "isCorrect"],
                     properties = {
                         "questionid": genai.types.Schema(
                             type = genai.types.Type.STRING,
@@ -64,27 +56,32 @@ class Answer:
                         ),
                         "feedback": genai.types.Schema(
                             type = genai.types.Type.STRING,
-                            description = "Encouraging, constructive feedback with high-level suggestions or questions",
+                            description = "Encouraging, constructive feedback with high-level observations, not suggestions",
+                        ),
+                        "isCorrect": genai.types.Schema(
+                            type = genai.types.Type.BOOLEAN,
+                            description = "True if the user's answer logically solves the question as written. False otherwise",
                         ),
                     },
                 ),
                 system_instruction=[
-                    types.Part.from_text(text="""You are a Python tutor analyzing student answers for multiple Python coding questions for students aged 10–17.
-                    Your task is to:
-                    Compare the user’s answer with the expected output and any provided constraints
-                    Identify errors: Highlight syntax mistakes, logic errors, or violations of the constraints
-                    Provide hints: Offer a Socratic-style hint that points out where the issue may lie, without revealing the solution. Avoid naming specific functions or methods
-                    Analyze efficiency: Comment on whether the solution could be improved (if applicable)
-                    Give feedback: Encourage correct answers with reinforcement, and provide constructive feedback if incorrect by guiding the student toward discovery using a relatable example or question
-                    Your response must follow the structured output format and stay within the scope of the student’s input.
-                    expected input:
-                    {
-                    \"questionid\": \"\",
-                    \"question\": \"\",
-                    \"correct_answer\": \"expected output\",
-                    \"constraints\": \"\",
-                    \"user_answer\": \"\"
-                    }"""),
+                    types.Part.from_text(text="""You are a Python tutor analyzing a student's answer to a coding question.
+                            Determine if the student's code logically solves the problem described or stated in the "question" field fully.
+                            Do NOT compare to "correct_answer" literally. Instead, judge whether the code accomplishes what the question ASKS FOR.
+                            user answer should match "constraints", if it doesnt, the user answer is incorrect.
+
+                            If the solution is CORRECT:
+                            feedback: Give brief, positive reinforcement only (e.g. “Well done!” or “Correct.”) and briefly explain the users currect answer.
+                            hint: Provide a deeper-thinking challenge (e.g. “now, what if the input was a float instead of an integer?”).
+                            If the solution is INCORRECT:
+                            user answer doesnt apply the "constraints".
+                            feedback: State only what the user current code does (e.g. “thats not quite right, your code does ...”).
+                            hint: Use a Socratic-style question that nudges the student to figure out what went wrong, without revealing the solution (e.g. “How do we usually get input from the user?”).
+
+                            NEVER:
+                            Do NOT give direct suggestions or code in feedback or hint.
+                            Do NOT reveal the correct answer.
+                            Do NOT praise incorrect answers."""),
                             ],
                         )
 
@@ -115,50 +112,69 @@ class Answer:
         
         # Coding question validation
         elif self.question_type_id == 2:
-            # Prepare input for check_coding method
-            input_data = json.dumps({
-                "questionid": str(self.question_id),
-                "question": "",  # We might want to fetch this from the database
-                "correct_answer": self.correct_answer,
-                "constraints": self.constraints or "",
-                "user_answer": self.user_answer
-            })
+            input_data = {
+                "questionid": self.question_id,
+                "question": self.correct_answer,
+                "user_answer": self.user_answer,
+                "constraints": self.constraints
+            }
             
-            # Call check_coding to get feedback
-            result = Answer.check_coding(input_data)
+            response = Answer.check_coding(json.dumps(input_data))
             
             try:
-                # Parse the result
-                parsed_result = json.loads(result)
-                self.hint = parsed_result.get('hint', '')
-                self.feedback = parsed_result.get('feedback', '')
+                result = json.loads(response)
                 
-                # For now, we'll set it to False
-                self.is_correct = False
+                # Check if there was an error in the response
+                if "error" in result:
+                    return {
+                        "questionId": self.question_id,
+                        "isCorrect": False,
+                        "error": result["error"]
+                    }
+                
+                # Set the feedback and hint from the response
+                self.feedback = result.get("feedback", "")
+                self.hint = result.get("hint", "")
+                
+                # Set whether the answer is correct
+                self.is_correct = result.get("isCorrect", False)
                 
                 return {
                     "questionId": self.question_id,
-                    "hint": self.hint,
+                    "isCorrect": self.is_correct,
                     "feedback": self.feedback,
-                    "isCorrect": self.is_correct
+                    "hint": self.hint
                 }
             except Exception as e:
+                # Handle JSON parsing errors or other exceptions
+                self.is_correct = False
                 return {
                     "questionId": self.question_id,
-                    "error": f"Failed to process coding answer: {str(e)}"
+                    "isCorrect": False,
+                    "error": f"Failed to process response: {str(e)}"
                 }
+        
+        # Handle other question types for now
+        else:
+            return {
+                "questionId": self.question_id,
+                "isCorrect": False,
+                "error": f"Unknown question type: {self.question_type_id}"
+            }
 
     def persistAns(self):
         try:
             # Persist answer to the database
+            print("Saving answer for question:", self.question_id)
             response = (
-                supabase_client.table("UserAnswer")
+                supabase_client.table("Answer")
                 .insert([
                     {
                         "questionID": self.question_id,
                         "userID": self.user_id,
                         "userAnswer": self.user_answer,
-                        "isCorrect": self.is_correct,
+                        "correctAnswer": self.correct_answer,
+                        "correct": self.is_correct,
                         "feedback": self.feedback,
                         "hint": self.hint
                     }
@@ -168,7 +184,7 @@ class Answer:
             return {"success": True, "data": response.data}
         except Exception as exception:
             return {"success": False, "error": str(exception), "status": 500}
-
+    
     @classmethod
     def submit_answers(cls, user_id, answers_data):
         results = []
@@ -178,7 +194,7 @@ class Answer:
                 answer = cls(
                     question_id=answer_data['questionId'],
                     user_id=user_id,
-                    user_answer=answer_data['userAnswer'],
+                    user_answer=str(answer_data['userAnswer']),  # Ensure string conversion
                     question_type_id=answer_data['questionTypeId'],
                     correct_answer=answer_data['correctAnswer'],
                     constraints=answer_data.get('constraints', '')
@@ -193,7 +209,8 @@ class Answer:
                 # Combine validation and persistence results
                 result = {
                     **validation_result,
-                    "persistenceSuccess": persist_result['success']
+                    "persistenceSuccess": persist_result['success'],
+                    "persistenceError": persist_result.get('error', '')
                 }
                 
                 results.append(result)
@@ -201,7 +218,9 @@ class Answer:
             except Exception as e:
                 results.append({
                     "questionId": answer_data['questionId'],
-                    "error": str(e)
+                    "error": str(e),
+                    "persistenceSuccess": False
                 })
         
         return results
+        

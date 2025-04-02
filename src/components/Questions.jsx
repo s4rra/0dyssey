@@ -6,10 +6,40 @@ function Questions() {
     const [loading, setLoading] = useState(true);
     const [userAnswers, setUserAnswers] = useState({});
     const [submissionResults, setSubmissionResults] = useState({});
+    const [showHints, setShowHints] = useState({});
     const navigate = useNavigate();
     const { subunitId } = useParams();
     const API_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/questions`;
     const SUBMIT_URL = "http://127.0.0.1:8080/api/submit-answers";
+    const GENERATE_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/generate-questions`;
+
+    const fetchQuestions = async () => {
+        const token = localStorage.getItem("token");
+        try {
+            const response = await fetch(API_URL, {
+                headers: { 
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch questions');
+            }
+
+            const data = await response.json();
+            setQuestions(data);
+            setLoading(false);
+            // Reset states
+            setUserAnswers({});
+            setSubmissionResults({});
+            setShowHints({});
+        } catch (error) {
+            console.error("Error fetching questions:", error);
+            alert(error.message);
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -19,34 +49,40 @@ function Questions() {
             return;
         }
 
-        const fetchQuestions = async () => {
-            try {
-                const response = await fetch(API_URL, {
-                    headers: { 
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch questions');
-                }
-
-                const data = await response.json();
-                setQuestions(data);
-                setLoading(false);
-            } catch (error) {
-                console.error("Error fetching questions:", error);
-                alert(error.message);
-                setLoading(false);
-            }
-        };
-
         fetchQuestions();
     }, [subunitId, navigate]);
 
     const handleAnswer = (questionId, value) => {
         setUserAnswers(prev => ({...prev, [questionId]: value}));
+    };
+
+    const toggleHint = (questionId) => {
+        setShowHints(prev => ({...prev, [questionId]: !prev[questionId]}));
+    };
+
+    const generateMoreQuestions = async () => {
+        const token = localStorage.getItem("token");
+        setLoading(true);
+        
+        try {
+            const response = await fetch(GENERATE_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate questions');
+            }
+
+            fetchQuestions();
+        } catch (error) {
+            console.error("Error generating questions:", error);
+            alert(error.message);
+            setLoading(false);
+        }
     };
 
     const submitAnswers = async () => {
@@ -143,8 +179,18 @@ function Questions() {
                 {result && (
                     <div className="coding-result">
                         {result.hint && (
-                            <div className="hint">
-                                <strong>Hint:</strong> {result.hint}
+                            <div>
+                                <button 
+                                    className="hint-button"
+                                    onClick={() => toggleHint(question.questionID)}
+                                >
+                                    {showHints[question.questionID] ? 'Hide Hint' : 'Show Hint'}
+                                </button>
+                                {showHints[question.questionID] && (
+                                    <div className="hint">
+                                        <strong>Hint:</strong> {result.hint}
+                                    </div>
+                                )}
                             </div>
                         )}
                         {result.feedback && (
@@ -174,15 +220,24 @@ function Questions() {
                 ))}
             </div>
 
-            {Object.keys(submissionResults).length === 0 && (
+            <div className="action-buttons">
+                {Object.keys(submissionResults).length === 0 && (
+                    <button 
+                        className="submit-answers-btn"
+                        onClick={submitAnswers}
+                        disabled={Object.keys(userAnswers).length !== questions.length}
+                    >
+                        Submit Answers
+                    </button>
+                )}
+
                 <button 
-                    className="submit-answers-btn"
-                    onClick={submitAnswers}
-                    disabled={Object.keys(userAnswers).length !== questions.length}
+                    className="more-questions-btn"
+                    onClick={generateMoreQuestions}
                 >
-                    Submit Answers
+                    Generate More Questions
                 </button>
-            )}
+            </div>
         </div>
     );
 }
