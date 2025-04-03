@@ -20,7 +20,7 @@ def submit_answers():
     # Get submitted answers from request
     answers_data = request.json
     
-    # Submit answers using the Answer class method
+    # Submit answers
     results = Answer.submit_answers(user_profile['userID'], answers_data)
     
     return jsonify({

@@ -2,8 +2,6 @@ from flask import Blueprint, request, jsonify
 from services.question_service import *
 from utils.auth import verify_token
 
-# API endpoints for questions, protected using JWT authentication
-
 question_bp = Blueprint("question_bp", __name__)
 
 @question_bp.route("/subunits/<int:subunit_id>/questions", methods=["GET"])
@@ -24,11 +22,6 @@ def generate_questions(subunit_id):
     auth_result = verify_token()
     if isinstance(auth_result, tuple):
         return jsonify(auth_result[0]), auth_result[1]
-    
-    user = auth_result
-    user_profile, status = UserService.get_user_profile(user)
-    if status != 200:
-        return user_profile, status  
             
-    result, status_code = Questions.generate_questions(subunit_id, user_profile)
+    result, status_code = Questions.generate_questions(subunit_id)
     return jsonify(result), int(status_code)

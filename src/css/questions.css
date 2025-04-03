@@ -1,0 +1,221 @@
+/* Questions Container */
+.questions-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .questions-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  /* Question Styles */
+  .question-container {
+    background: #fff;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+    padding: 20px;
+  }
+  
+  .question-text {
+    font-size: 16px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  
+  /* Multiple Choice Options */
+  .options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .option-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  
+  .option-label input[type="radio"] {
+    margin: 0;
+  }
+  
+  /* Fill in the Blanks */
+  .fill-blank-input {
+    width: 120px;
+    padding: 4px 8px;
+    margin: 0 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  /* Drag and Drop */
+  .drag-drop-blank {
+    display: inline-block;
+    min-width: 80px;
+    min-height: 28px;
+    border: 1px dashed #999;
+    margin: 0 8px;
+    padding: 4px 8px;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+  
+  .drag-options-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  
+  .drag-option {
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: grab;
+    user-select: none;
+  }
+  
+  .clear-blank-btn {
+    background: none;
+    border: none;
+    color: #ff4444;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    margin-left: 4px;
+  }
+  
+  /* Coding Question */
+  .coding-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: monospace;
+    resize: vertical;
+  }
+  
+  /* Feedback */
+  .feedback-container {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+  }
+  
+  .feedback-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  
+  .feedback-result.correct {
+    color: #2e7d32;
+  }
+  
+  .feedback-result.incorrect {
+    color: #d32f2f;
+  }
+  
+  .feedback-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .feedback-text {
+    margin: 8px 0;
+    color: #555;
+  }
+  
+  /* Hint */
+  .hint-container {
+    margin-top: 12px;
+  }
+  
+  .hint-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: #666;
+  }
+  
+  .hint-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .hint-text {
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    color: #555;
+  }
+  
+  /* Action Buttons */
+  .action-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  
+  .submit-button,
+  .generate-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  
+  .submit-button {
+    background-color: #1976d2;
+    color: white;
+  }
+  
+  .submit-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .generate-button {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+  
+  .submit-button:hover:not(:disabled) {
+    background-color: #1565c0;
+  }
+  
+  .generate-button:hover {
+    background-color: #e0e0e0;
+  }
+  
+  /* Loading State */
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 18px;
+  }

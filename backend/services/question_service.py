@@ -1,23 +1,8 @@
-import base64
-import os
 import json
+from prompt import *
 from typing import Optional
-from google import genai
-from google.genai import types
 from config.settings import supabase_client
 from services.user_service import *
-
-#QuestionService fixing
-class SubUnit:
-    def __init__(self, subUnitID: int, subUnitName: str, subUnitDescription: str, unitID: int, subUnitContent: Optional[dict]):
-        self.subUnitID = subUnitID
-        self.subUnitName = subUnitName
-        self.subUnitDescription = subUnitDescription
-        self.unitID = unitID
-        self.subUnitContent = subUnitContent  
-
-    def __repr__(self):
-        return f"SubUnit(subUnitID={self.subUnitID}, Name='{self.subUnitName}', subUnitDescription='{self.subUnitDescription}',unitID='{self.unitID}' )"
 
 class Questions:
     def __init__(self,
@@ -58,160 +43,9 @@ class Questions:
                 .execute()
             )
             print(response.data)
-            return {"success": True, "data": response.data}
+            return {"success": True, "data": response.data, "status": 201}
         except Exception as exception:
             return {"success": False, "error": str(exception), "status": 500}
-
-    def generate_MCQ(prompt):
-        try:
-            client = genai.Client(
-                api_key=os.environ.get("GEMINI_API_KEY"),
-            )
-
-            model = "gemini-2.0-flash"
-            contents = [
-                types.Content(
-                    role="user",
-                    parts=[
-                        types.Part.from_text(text=prompt),
-                    ],
-                ),
-            ]
-            generate_content_config = types.GenerateContentConfig(
-                temperature=0.5,
-                top_p=0.9,
-                top_k=40,
-                max_output_tokens=2000,
-                response_mime_type="application/json",
-                response_schema=genai.types.Schema(
-                    type = genai.types.Type.ARRAY,
-                    items = genai.types.Schema(
-                        type = genai.types.Type.OBJECT,
-                        required = ["question", "options", "correct_answer", "tags"],
-                        properties = {
-                            "question": genai.types.Schema(
-                                type = genai.types.Type.STRING,
-                            ),
-                            "options": genai.types.Schema(
-                                type = genai.types.Type.OBJECT,
-                                required = ["a", "b", "c", "d"],
-                                properties = {
-                                    "a": genai.types.Schema(
-                                        type = genai.types.Type.STRING,
-                                    ),
-                                    "b": genai.types.Schema(
-                                        type = genai.types.Type.STRING,
-                                    ),
-                                    "c": genai.types.Schema(
-                                        type = genai.types.Type.STRING,
-                                    ),
-                                    "d": genai.types.Schema(
-                                        type = genai.types.Type.STRING,
-                                    ),
-                                },
-                            ),
-                            "correct_answer": genai.types.Schema(
-                                type = genai.types.Type.STRING,
-                            ),
-                            "tags": genai.types.Schema(
-                                type = genai.types.Type.ARRAY,
-                                items = genai.types.Schema(
-                                    type = genai.types.Type.STRING,
-                                ),
-                            ),
-                        },
-                    ),
-                ),
-                system_instruction=[
-                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 unique Python multiple-choice questions in a JSON array,
-                                         each question must follow the schema exactly. Respond with a JSON array only. Make questions educational, age-appropriate (10–17),
-                                         fun, and directly tied to the provided subunit description! Avoid repeating the same question with slight rewording"""),],
-            )
-
-            response = ""
-            for chunk in client.models.generate_content_stream(
-                model=model,
-                contents=contents,
-                config=generate_content_config,
-            ): 
-                print(chunk.text, end="")
-                response += chunk.text
-            return response
-        except Exception as e:
-            return {
-            "error": "Failed to generate MCQ",
-            "details": str(e),
-            "status": 500
-        }
-            
-    def generate_coding(prompt):
-        try:
-            client = genai.Client(
-                api_key=os.environ.get("GEMINI_API_KEY"),
-            )
-
-            model = "gemini-2.0-flash"
-            contents = [
-                types.Content(
-                    role="user",
-                    parts=[
-                        types.Part.from_text(text=prompt),
-                    ],
-                ),
-            ]
-            generate_content_config = types.GenerateContentConfig(
-                temperature=0.5,
-                top_p=0.9,
-                top_k=40,
-                max_output_tokens=2000,
-                response_mime_type="application/json",
-                response_schema=genai.types.Schema(
-                    type = genai.types.Type.ARRAY,
-                    items = genai.types.Schema(
-                        type = genai.types.Type.OBJECT,
-                        required = ["question", "correct_answer", "constraints", "tags"],
-                        properties = {
-                            "question": genai.types.Schema(
-                                type = genai.types.Type.STRING,
-                            ),
-                            "correct_answer": genai.types.Schema(
-                                type = genai.types.Type.STRING,
-                            ),
-                            "constraints": genai.types.Schema(
-                                type = genai.types.Type.STRING,
-                            ),
-                            "tags": genai.types.Schema(
-                                type = genai.types.Type.ARRAY,
-                                items = genai.types.Schema(
-                                    type = genai.types.Type.STRING,
-                                ),
-                            ),
-                        },
-                    ),
-                ),
-                system_instruction=[
-                    types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 Python short coding questions
-                                         in a JSON array. Follow the schema exactly. Each question must ask the student to write code, not a full program.
-                                         Stick to the subunit description content scope ONLY. Keep it educational, age-appropriate (10–17), and fun. 
-                                         Avoid repeating the same question with slight rewording!"""),
-                ],
-            )
-
-            response = ""
-            for chunk in client.models.generate_content_stream(
-                model=model,
-                contents=contents,
-                config=generate_content_config,
-            ): 
-                print(chunk.text, end="")
-                response += chunk.text
-            return response
-        except Exception as e:
-            return {
-            "error": "Failed to generate coding question",
-            "details": str(e),
-            "status": 500
-        }
 
     def get_questions(subunit_id, user):
         try:
@@ -223,7 +57,7 @@ class Questions:
 
             # Fetch MCQs
             if skill_level_id in [1, 2]:
-                limit = 4 if skill_level_id == 1 else 2
+                limit = 3 if skill_level_id == 1 else 2
                 mcq_response = (
                     supabase_client.table("Question")
                     .select("questionID, questionText, correctAnswer, options, questionTypeID")
@@ -236,10 +70,42 @@ class Questions:
                 )
                 if mcq_response.data:
                     questions.extend(mcq_response.data)
+            
+            # Fetch Fill-in-the-Blank Questions
+            if skill_level_id in [1, 2]:
+                limit = 3 if skill_level_id == 1 else 2
+                fill_in_response = (
+                    supabase_client.table("Question")
+                    .select("questionID, questionText, correctAnswer, options, questionTypeID")
+                    .eq("lessonID", subunit_id)
+                    .eq("questionTypeID", 3)  # Fill-in-the-blank
+                    .eq("generated", True)
+                    .order("created_at", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                if fill_in_response.data:
+                    questions.extend(fill_in_response.data)
+                
+            # Fetch Drag-and-Drop Questions
+            if skill_level_id in [1, 2]:
+                limit = 2 if skill_level_id == 1 else 3
+                drag_and_drop_response = (
+                    supabase_client.table("Question")
+                    .select("questionID, questionText, correctAnswer, options, questionTypeID")
+                    .eq("lessonID", subunit_id)
+                    .eq("questionTypeID", 4)  # Drag-and-drop
+                    .eq("generated", True)
+                    .order("created_at", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                if drag_and_drop_response.data:
+                    questions.extend(drag_and_drop_response.data)
 
             # Fetch Coding
             if skill_level_id in [2, 3]:
-                limit = 4 if skill_level_id == 3 else 2
+                limit = 4 if skill_level_id == 3 else 1
                 coding_response = (
                     supabase_client.table("Question")
                     .select("questionID, questionText, correctAnswer, constraints, questionTypeID")
@@ -261,7 +127,7 @@ class Questions:
         except Exception as e:
             return {"error": str(e)}, 500
 
-    def generate_questions(subunit_id, user):
+    def generate_questions(subunit_id):
         try:
             # Fetch subunit info
             subunit_info = (
@@ -283,7 +149,7 @@ class Questions:
             question_ids = []  # Store generated question IDs
 
             # Generate and store MCQs
-            mcq_data = json.loads(Questions.generate_MCQ(prompt))
+            mcq_data = json.loads(Prompt.generate_MCQ(prompt))
             print("=== Generated MCQs ===")
             print(mcq_data)
 
@@ -304,7 +170,7 @@ class Questions:
                 question_ids.append(response["data"][0]["questionID"])
             
             # Generate and store coding questions
-            coding_data = json.loads(Questions.generate_coding(prompt))
+            coding_data = json.loads(Prompt.generate_coding(prompt))
             print("=== Generated Coding Questions ===")
             print(coding_data)
 
@@ -324,6 +190,42 @@ class Questions:
                     return response, response.get("status", 500)
                 question_ids.append(response["data"][0]["questionID"])
 
+            # Generate and store fill-in-the-blank questions
+            fill_in_data = json.loads(Prompt.generate_fill_in(prompt))
+            for q in fill_in_data:
+                fill_in_store = Questions(
+                    question_type_id=3,
+                    lesson_id=subunit_id,
+                    question_text=q["question"],
+                    correct_answer=q["correct_answer"],
+                    options={},
+                    constraints="",
+                    tags=q["tags"],
+                    generated=True
+                )
+                response = Questions.persist(fill_in_store)
+                if not response["success"]:
+                    return response, response.get("status", 500)
+                question_ids.append(response["data"][0]["questionID"])
+
+            # Generate and store drag-and-drop questions
+            drag_and_drop_data = json.loads(Prompt.generate_drag_and_drop(prompt))
+            for q in drag_and_drop_data:
+                drag_and_drop_store = Questions(
+                    question_type_id=4,
+                    lesson_id=subunit_id,
+                    question_text=q["question"],
+                    correct_answer=q["correct_answer"],
+                    options=q["options"],
+                    constraints="",
+                    tags=q["tags"],
+                    generated=True
+                )
+                response = Questions.persist(drag_and_drop_store)
+                if not response["success"]:
+                    return response, response.get("status", 500)
+                question_ids.append(response["data"][0]["questionID"])
+                
             return {"message": "Questions generated and stored successfully", "question_ids": question_ids}, 200
         except Exception as e:
             return {"error": str(e)}, 500
