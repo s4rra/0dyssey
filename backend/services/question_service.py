@@ -1,6 +1,5 @@
 import json
 from prompt import *
-from typing import Optional
 from config.settings import supabase_client
 from services.user_service import *
 
@@ -13,7 +12,9 @@ class Questions:
                     options: dict,
                     tags: list,
                     constraints: str,
-                    generated: bool):
+                    generated: bool,
+                    skilllevel: int,
+                    avgTimeSeconds: int):
             
             self.question_type_id = question_type_id
             self.lesson_id = lesson_id
@@ -23,6 +24,27 @@ class Questions:
             self.tags = tags
             self.constraints = constraints
             self.generated = generated
+            self.skilllevel = skilllevel
+            self.avgTimeSeconds = avgTimeSeconds
+
+    @staticmethod
+    def _fetch_questions_by_type(subunit_id, question_type_id, limit):
+        try:
+            fields = "questionID, questionText, correctAnswer, options, questionTypeID, constraints"
+            response = (
+                supabase_client.table("Question")
+                .select(fields)
+                .eq("lessonID", subunit_id)
+                .eq("questionTypeID", question_type_id)
+                .eq("generated", True)
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            return response.data if response.data else []
+        except Exception as e:
+            print(f"Error fetching questions type {question_type_id}:", e)
+            return []
 
     def persist(question): 
         try:
@@ -37,7 +59,9 @@ class Questions:
                         "options": question.options,
                         "tags": question.tags,
                         "constraints": question.constraints,
-                        "generated": True
+                        "generated": True,
+                        "skillLevelID": question.skilllevel,
+                        "avgTimeSeconds": question.avgTimeSeconds
                     }
                 ])
                 .execute()
@@ -47,77 +71,24 @@ class Questions:
         except Exception as exception:
             return {"success": False, "error": str(exception), "status": 500}
 
+    @staticmethod
     def get_questions(subunit_id, user):
         try:
             skill_level_id = user["chosenSkillLevel"]
-            questions = []
-
             if skill_level_id not in [1, 2, 3]:
                 return {"error": "Invalid skill level provided"}, 400
 
-            # Fetch MCQs
-            if skill_level_id in [1, 2]:
-                limit = 3 if skill_level_id == 1 else 2
-                mcq_response = (
-                    supabase_client.table("Question")
-                    .select("questionID, questionText, correctAnswer, options, questionTypeID")
-                    .eq("lessonID", subunit_id)
-                    .eq("questionTypeID", 1)
-                    .eq("generated", True)
-                    .order("created_at", desc=True)
-                    .limit(limit)
-                    .execute()
-                )
-                if mcq_response.data:
-                    questions.extend(mcq_response.data)
-            
-            # Fetch Fill-in-the-Blank Questions
-            if skill_level_id in [1, 2]:
-                limit = 3 if skill_level_id == 1 else 2
-                fill_in_response = (
-                    supabase_client.table("Question")
-                    .select("questionID, questionText, correctAnswer, options, questionTypeID")
-                    .eq("lessonID", subunit_id)
-                    .eq("questionTypeID", 3)  # Fill-in-the-blank
-                    .eq("generated", True)
-                    .order("created_at", desc=True)
-                    .limit(limit)
-                    .execute()
-                )
-                if fill_in_response.data:
-                    questions.extend(fill_in_response.data)
-                
-            # Fetch Drag-and-Drop Questions
-            if skill_level_id in [1, 2]:
-                limit = 2 if skill_level_id == 1 else 3
-                drag_and_drop_response = (
-                    supabase_client.table("Question")
-                    .select("questionID, questionText, correctAnswer, options, questionTypeID")
-                    .eq("lessonID", subunit_id)
-                    .eq("questionTypeID", 4)  # Drag-and-drop
-                    .eq("generated", True)
-                    .order("created_at", desc=True)
-                    .limit(limit)
-                    .execute()
-                )
-                if drag_and_drop_response.data:
-                    questions.extend(drag_and_drop_response.data)
-
-            # Fetch Coding
+            type_limits = {
+                1: 3 if skill_level_id == 1 else 2,  # MCQ
+                3: 3 if skill_level_id == 1 else 2,  # Fill-in
+                4: 2 if skill_level_id == 1 else 3   # Drag-Drop
+            }  
             if skill_level_id in [2, 3]:
-                limit = 4 if skill_level_id == 3 else 1
-                coding_response = (
-                    supabase_client.table("Question")
-                    .select("questionID, questionText, correctAnswer, constraints, questionTypeID")
-                    .eq("lessonID", subunit_id)
-                    .eq("questionTypeID", 2)
-                    .eq("generated", True)
-                    .order("created_at", desc=True)
-                    .limit(limit)
-                    .execute()
-                )
-                if coding_response.data:
-                    questions.extend(coding_response.data)
+                type_limits[2] = 1 if skill_level_id == 2 else 4  # Coding
+
+            questions = []
+            for q_type, limit in type_limits.items():
+                questions.extend(Questions._fetch_questions_by_type(subunit_id, q_type, limit))
 
             if not questions:
                 return {"error": "No questions found"}, 404
@@ -127,9 +98,10 @@ class Questions:
         except Exception as e:
             return {"error": str(e)}, 500
 
-    def generate_questions(subunit_id):
+    def generate_questions(subunit_id, user):
         try:
-            # Fetch subunit info
+            skill_level = user["chosenSkillLevel"]
+            
             subunit_info = (
             supabase_client.table("RefSubUnit")
                     .select("subUnitDescription, RefUnit(unitDescription)")
@@ -143,90 +115,39 @@ class Questions:
 
             unitDescription = subunit_info.data["RefUnit"]["unitDescription"]
             subUnitDescription = subunit_info.data["subUnitDescription"]
-            prompt = f"generate new questions for: unitDescription:({unitDescription}), subUnitDescription: ({subUnitDescription})"
+            prompt = f"generate new questions for: unitDescription:({unitDescription}), subUnitDescription: ({subUnitDescription}), Skill Level: {skill_level} (Beginner=1, Intermediate=2, Advanced=3)"
             print(prompt)
 
-            question_ids = []  # Store generated question IDs
+            question_ids = []
 
-            # Generate and store MCQs
-            mcq_data = json.loads(Prompt.generate_MCQ(prompt))
-            print("=== Generated MCQs ===")
-            print(mcq_data)
+            def process_questions(data, question_type_id):
+                for q in data:
+                    avg_time = q.get("avgTimeSeconds", 120)
+                    question = Questions(
+                        question_type_id=question_type_id,
+                        lesson_id=subunit_id,
+                        question_text=q["question"],
+                        correct_answer=q["correct_answer"],
+                        options=q.get("options", {}),
+                        constraints=q.get("constraints", ""),
+                        tags=q.get("tags", []),
+                        generated=True,
+                        skilllevel=skill_level,
+                        avgTimeSeconds=avg_time
+                    )
+                    res = Questions.persist(question)
+                    if not res["success"]:
+                        raise Exception(res.get("error", "tests error"))
+                    question_ids.append(res["data"][0]["questionID"])
 
-            for q in mcq_data:
-                mcq_store = Questions(
-                    question_type_id=1,
-                    lesson_id=subunit_id,
-                    question_text=q["question"],
-                    correct_answer=q["correct_answer"],
-                    options=q["options"],
-                    constraints="",  # MCQs don't have constraints
-                    tags=q["tags"],
-                    generated=True
-                )
-                response = Questions.persist(mcq_store)
-                if not response["success"]:
-                    return response, response.get("status", 500)
-                question_ids.append(response["data"][0]["questionID"])
-            
-            # Generate and store coding questions
-            coding_data = json.loads(Prompt.generate_coding(prompt))
-            print("=== Generated Coding Questions ===")
-            print(coding_data)
+            # Generate and persist the questions for each type
+            process_questions(json.loads(Prompt.generate_MCQ(prompt)), 1)
+            process_questions(json.loads(Prompt.generate_coding(prompt)), 2)
+            process_questions(json.loads(Prompt.generate_fill_in(prompt)), 3)
+            process_questions(json.loads(Prompt.generate_drag_and_drop(prompt)), 4)
 
-            for q in coding_data:
-                coding_store = Questions(
-                    question_type_id=2,
-                    lesson_id=subunit_id,
-                    question_text=q["question"],
-                    correct_answer=q["correct_answer"],
-                    options={},  # Coding has no options
-                    constraints=q["constraints"],
-                    tags=q["tags"],
-                    generated=True
-                )
-                response = Questions.persist(coding_store)
-                if not response["success"]:
-                    return response, response.get("status", 500)
-                question_ids.append(response["data"][0]["questionID"])
+            return {"message": "Questions generated and stored", "question_ids": question_ids}, 200
 
-            # Generate and store fill-in-the-blank questions
-            fill_in_data = json.loads(Prompt.generate_fill_in(prompt))
-            for q in fill_in_data:
-                fill_in_store = Questions(
-                    question_type_id=3,
-                    lesson_id=subunit_id,
-                    question_text=q["question"],
-                    correct_answer=q["correct_answer"],
-                    options={},
-                    constraints="",
-                    tags=q["tags"],
-                    generated=True
-                )
-                response = Questions.persist(fill_in_store)
-                if not response["success"]:
-                    return response, response.get("status", 500)
-                question_ids.append(response["data"][0]["questionID"])
-
-            # Generate and store drag-and-drop questions
-            drag_and_drop_data = json.loads(Prompt.generate_drag_and_drop(prompt))
-            for q in drag_and_drop_data:
-                drag_and_drop_store = Questions(
-                    question_type_id=4,
-                    lesson_id=subunit_id,
-                    question_text=q["question"],
-                    correct_answer=q["correct_answer"],
-                    options=q["options"],
-                    constraints="",
-                    tags=q["tags"],
-                    generated=True
-                )
-                response = Questions.persist(drag_and_drop_store)
-                if not response["success"]:
-                    return response, response.get("status", 500)
-                question_ids.append(response["data"][0]["questionID"])
-                
-            return {"message": "Questions generated and stored successfully", "question_ids": question_ids}, 200
         except Exception as e:
             return {"error": str(e)}, 500
 

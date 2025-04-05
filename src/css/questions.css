@@ -131,9 +131,9 @@
     color: #d32f2f;
   }
   
-  .feedback-icon {
-    width: 18px;
-    height: 18px;
+  .feedback-symbol {
+    font-size: 18px;
+    line-height: 1;
   }
   
   .feedback-text {
@@ -158,9 +158,9 @@
     color: #666;
   }
   
-  .hint-icon {
-    width: 16px;
-    height: 16px;
+  .hint-symbol {
+    font-size: 16px;
+    font-weight: bold;
   }
   
   .hint-text {

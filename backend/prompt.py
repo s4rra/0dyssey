@@ -29,7 +29,7 @@ class Prompt:
                     type = genai.types.Type.ARRAY,
                     items = genai.types.Schema(
                         type = genai.types.Type.OBJECT,
-                        required = ["question", "options", "correct_answer", "tags"],
+                        required = ["question", "options", "correct_answer", "tags", "avgTimeSeconds", "skillLevel"],
                         properties = {
                             "question": genai.types.Schema(
                                 type = genai.types.Type.STRING,
@@ -61,13 +61,25 @@ class Prompt:
                                     type = genai.types.Type.STRING,
                                 ),
                             ),
+                            "avgTimeSeconds": genai.types.Schema(
+                                type = genai.types.Type.INTEGER,
+                                description = "Estimated average time in seconds it would take a student to solve the question"
+                            ),
+                            "skillLevel": genai.types.Schema(
+                                type = genai.types.Type.STRING,
+                                enum = ["beginner", "intermediate", "advanced"],
+                                description = "Target student skill level"
+                            ),
                         },
                     ),
                 ),
                 system_instruction=[
                     types.Part.from_text(text="""Act as an energetic and engaging teacher creating 3 unique Python multiple-choice questions in a JSON array,
                                          each question must follow the schema exactly. Respond with a JSON array only. Make questions educational, age-appropriate (10–17),
-                                         fun, and directly tied to the provided subunit description! Avoid repeating the same question with slight rewording"""),],
+                                         fun, and directly tied to the provided subunit description! Avoid repeating the same question with slight rewording
+                                         Estimated time to solve in seconds ("avgTimeSeconds")
+                                         A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                         """),],
             )
 
             response = ""
@@ -111,7 +123,7 @@ class Prompt:
                     type = genai.types.Type.ARRAY,
                     items = genai.types.Schema(
                         type = genai.types.Type.OBJECT,
-                        required = ["question", "correct_answer", "constraints", "tags"],
+                        required = ["question", "correct_answer", "constraints", "tags", "avgTimeSeconds", "skillLevel"],
                         properties = {
                             "question": genai.types.Schema(
                                 type = genai.types.Type.STRING,
@@ -128,6 +140,15 @@ class Prompt:
                                     type = genai.types.Type.STRING,
                                 ),
                             ),
+                            "avgTimeSeconds": genai.types.Schema(
+                                type = genai.types.Type.INTEGER,
+                                description = "Estimated average time in seconds it would take a student to solve the question"
+                            ),
+                            "skillLevel": genai.types.Schema(
+                                type = genai.types.Type.STRING,
+                                enum = ["beginner", "intermediate", "advanced"],
+                                description = "Target student skill level"
+                            )
                         },
                     ),
                 ),
@@ -135,7 +156,10 @@ class Prompt:
                     types.Part.from_text(text="""Act as an energetic and engaging teacher creating 4 Python short coding questions
                                          in a JSON array. Follow the schema exactly. Each question must ask the student to write code, not a full program.
                                          Stick to the subunit description content scope ONLY. Keep it educational, age-appropriate (10–17), and fun. 
-                                         Avoid repeating the same question with slight rewording!"""),
+                                         Avoid repeating the same question with slight rewording!
+                                         Estimated time to solve in seconds ("avgTimeSeconds")
+                                         A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                         """),
                 ],
             )
 
@@ -180,7 +204,7 @@ class Prompt:
                     type = genai.types.Type.ARRAY,
                     items = genai.types.Schema(
                         type = genai.types.Type.OBJECT,
-                        required = ["question", "correct_answer", "tags"],
+                        required = ["question", "correct_answer", "tags", "avgTimeSeconds", "skillLevel"],
                         properties = {
                             "question": genai.types.Schema(
                                 type = genai.types.Type.STRING,
@@ -194,6 +218,15 @@ class Prompt:
                                     type = genai.types.Type.STRING,
                                 ),
                             ),
+                            "avgTimeSeconds": genai.types.Schema(
+                                type = genai.types.Type.INTEGER,
+                                description = "Estimated average time in seconds it would take a student to solve the question"
+                            ),
+                            "skillLevel": genai.types.Schema(
+                                type = genai.types.Type.STRING,
+                                enum = ["beginner", "intermediate", "advanced"],
+                                description = "Target student skill level"
+                            )
                         },
                     ),
                 ),
@@ -205,7 +238,10 @@ class Prompt:
                                     Contain 1 or 2 blanks, marked clearly as _____.
                                     Include a correct_answer array matching the blanks in order.
                                     Strictly follow the structured schema provided.
-                                    Keep the questions clear, relevant, and educational. Avoid repeating concepts or introducing topics outside the subunit’s scope"""),
+                                    Keep the questions clear, relevant, and educational. Avoid repeating concepts or introducing topics outside the subunit’s scope
+                                    Estimated time to solve in seconds ("avgTimeSeconds")
+                                    A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                    """),
                         ],
                     )
 
@@ -251,7 +287,7 @@ class Prompt:
                     type = genai.types.Type.ARRAY,
                     items = genai.types.Schema(
                         type = genai.types.Type.OBJECT,
-                        required = ["question", "correct_answer", "options", "tags"],
+                        required = ["question", "correct_answer", "options", "tags",  "avgTimeSeconds", "skillLevel"],
                         properties = {
                             "question": genai.types.Schema(
                                 type = genai.types.Type.STRING,
@@ -274,6 +310,15 @@ class Prompt:
                                     type = genai.types.Type.STRING,
                                 ),
                             ),
+                            "avgTimeSeconds": genai.types.Schema(
+                                type = genai.types.Type.INTEGER,
+                                description = "Estimated average time in seconds it would take a student to solve the question"
+                            ),
+                            "skillLevel": genai.types.Schema(
+                                type = genai.types.Type.STRING,
+                                enum = ["beginner", "intermediate", "advanced"],
+                                description = "Target student skill level"
+                            ),
                         },
                     ),
                 ),
@@ -286,7 +331,10 @@ class Prompt:
                                         - Include a `question` (context with blanks), `correct_answer` (ordered list), and `options` (correct answers + distractors)
                                         - Follow the JSON schema exactly
 
-                                        Do NOT repeat the same pattern, and don’t go beyond the subunit scope."""),
+                                        Do NOT repeat the same pattern, and don’t go beyond the subunit scope.
+                                        Estimated time to solve in seconds ("avgTimeSeconds")
+                                         A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                        """),
                 ],
             )
 
@@ -330,7 +378,7 @@ class Prompt:
                 response_mime_type="application/json",
                 response_schema=genai.types.Schema(
                     type = genai.types.Type.OBJECT,
-                    required = ["questionid", "user_answer", "hint", "feedback", "isCorrect"],
+                    required = ["questionid", "user_answer", "hint", "feedback", "isCorrect","points"],
                     properties = {
                         "questionid": genai.types.Schema(
                             type = genai.types.Type.STRING,
@@ -352,6 +400,10 @@ class Prompt:
                             type = genai.types.Type.BOOLEAN,
                             description = "True if the user's answer logically solves the question as written. False otherwise",
                         ),
+                        "points": genai.types.Schema(
+                            type = genai.types.Type.INTEGER,
+                            description = "Score out of 10 based on how well the student's code meets the question's requirements"
+                        ),
                     },
                 ),
                 system_instruction=[
@@ -371,7 +423,10 @@ class Prompt:
                             NEVER:
                             Do NOT give direct suggestions or code in feedback or hint.
                             Do NOT reveal the correct answer.
-                            Do NOT praise incorrect answers."""),
+                            Do NOT praise incorrect answers.
+                            
+                            based on estimated time to solve in seconds ("avgTimeSeconds") , give score out of 10 in points
+                            """),
                             ],
                         )
 
@@ -415,7 +470,7 @@ class Prompt:
                 response_mime_type="application/json",
                 response_schema=genai.types.Schema(
                     type = genai.types.Type.OBJECT,
-                    required = ["questionid", "user_answer", "isCorrect", "hint", "feedback"],
+                    required = ["questionid", "user_answer", "isCorrect", "hint", "feedback","points"],
                     properties = {
                         "questionid": genai.types.Schema(
                             type = genai.types.Type.STRING,
@@ -440,21 +495,27 @@ class Prompt:
                             type = genai.types.Type.STRING,
                             description = "Constructive comment. Encouraging if correct, helpful if not, no answer suggestions",
                         ),
+                        "points": genai.types.Schema(
+                            type = genai.types.Type.INTEGER,
+                            description = "Score out of 10 based on how well the student's code meets the question's requirements"
+                        ),
                     },
                 ),
                 system_instruction=[
                     types.Part.from_text(text="""You are a Python tutor helping assess student answers for fill-in-the-blank Python questions. These questions may contain 1 to 3 blanks, marked as \"_____\".
 
-                        Your job is to evaluate if the student's answers fill the blanks **logically and correctly**, based on the context of the original question.
+                        Your job is to evaluate if the student's answers fill the blanks logically and correctly, based on the context of the original question.
 
                         You MUST:
                         - Use the original question as the main reference (not the exact correct answer).
                         - Accept alternate correct phrasing or synonyms if they make sense.
-                        - Use the expected answers (correct_answer) as a **guide**, not a strict match.
-                        - If the student answer is **logically correct**, mark it as correct (correct!, great work!).
-                        - for hints, use a **short Socratic-style hint** (that encourages thinking without giving the answer).
-                        - Keep all feedback short and focused, (not quite right, your code does...), Do **NOT** give away the correct answer, do not give tips or suggestions
-
+                        - Use the expected answers (correct_answer) as a guide, not a strict match.
+                        - If the student answer is logically correct, mark it as correct (correct!, great work!).
+                        - for hints, use a short Socratic-style hint (that encourages thinking without giving the answer).
+                        - Keep all feedback short and focused, (not quite right, your code does...), Do NOT give away the correct answer, do not give tips or suggestions
+                        
+                        based on estimated time to solve in seconds ("avgTimeSeconds") , give score out of 10 in points
+                        
                         Your response MUST follow this exact JSON schema"""),
                                 ],
                             )
