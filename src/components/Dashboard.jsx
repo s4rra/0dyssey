@@ -101,6 +101,7 @@ function Dashboard() {
               onChange={setDate} 
               value={date}
               tileClassName={tileClassName}
+              tileContent={tileContent}
             />
           </div>
         </div>
