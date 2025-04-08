@@ -1,4 +1,24 @@
 /* Questions Container */
+.submit-single-button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-single-button:hover {
+  background-color: #3a70c2;
+}
+
+.points-earned {
+  color: #2ecc71;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
 .questions-container {
     max-width: 800px;
     margin: 0 auto;

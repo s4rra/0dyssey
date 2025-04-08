@@ -28,9 +28,9 @@ class Questions:
             self.avgTimeSeconds = avgTimeSeconds
 
     @staticmethod
-    def _fetch_questions_by_type(subunit_id, question_type_id, limit):
+    def fetch_questions_by_type(subunit_id, question_type_id, limit):
         try:
-            fields = "questionID, questionText, correctAnswer, options, questionTypeID, constraints"
+            fields = "questionID, questionText, correctAnswer, options, questionTypeID, constraints, skilllevel, avgTimeSeconds"
             response = (
                 supabase_client.table("Question")
                 .select(fields)
@@ -60,7 +60,7 @@ class Questions:
                         "tags": question.tags,
                         "constraints": question.constraints,
                         "generated": True,
-                        "skillLevelID": question.skilllevel,
+                        "skilllevel": question.skilllevel,
                         "avgTimeSeconds": question.avgTimeSeconds
                     }
                 ])
@@ -88,7 +88,7 @@ class Questions:
 
             questions = []
             for q_type, limit in type_limits.items():
-                questions.extend(Questions._fetch_questions_by_type(subunit_id, q_type, limit))
+                questions.extend(Questions.fetch_questions_by_type(subunit_id, q_type, limit))
 
             if not questions:
                 return {"error": "No questions found"}, 404

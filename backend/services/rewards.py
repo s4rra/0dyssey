@@ -1,9 +1,12 @@
-class RewardSystem:
+"""from datetime import datetime
+import json
+
+class ScoreCalculator:
     BASE_POINTS = {
-        1: 5,  # for MCQ
-        2: 10,  # for Coding
-        3: 7,  # for Fill-in
-        4: 8   # for Dragdrop
+        1: 5,  # MCQ
+        2: 10,  # Coding
+        3: 7,  # Fill-in
+        4: 8   # Drag-drop
     }
 
     SKILL_BONUS = {
@@ -13,15 +16,14 @@ class RewardSystem:
     }
 
     @staticmethod
-    def calculate_points(question_type_id, is_correct, retry, time_taken, skill_level, avg_time):
+    def calculate_points(question_type_id, is_correct, retry, time_taken, skill_level, avg_time, base_score=None):
         if not is_correct:
             return 0
-    
-        base = RewardSystem.BASE_POINTS.get(question_type_id, 0)
-        skill_bonus = RewardSystem.SKILL_BONUS.get(skill_level, 0)
+
+        base = base_score if base_score is not None else ScoreCalculator.BASE_POINTS.get(question_type_id, 0)
+        skill_bonus = ScoreCalculator.SKILL_BONUS.get(skill_level, 0)
         retry_penalty = max(0, retry - 1)
 
-        # Basic time bonus logic (based on average time passed in)
         time_bonus = 0
         if time_taken is not None and avg_time:
             if time_taken < avg_time * 0.5:
@@ -32,9 +34,6 @@ class RewardSystem:
                 time_bonus = 1
 
         total = base + skill_bonus + time_bonus - retry_penalty
-        total = max(total, 1)
+        return max(total, 1)
 
-        print(f"[POINTS DEBUG] Base: {base}, Skill Bonus: {skill_bonus}, Time Bonus: {time_bonus}, Retry Penalty: {retry_penalty}, Total: {total}")
-
-        return total
-
+"""

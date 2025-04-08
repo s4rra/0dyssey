@@ -8,17 +8,19 @@ function Questions() {
   const [submissionResults, setSubmissionResults] = useState({});
   const [showHints, setShowHints] = useState({});
   const [loading, setLoading] = useState(true);
+  const [startTimes, setStartTimes] = useState({});
 
   const { subunitId } = useParams();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const API_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/questions`;
   const SUBMIT_URL = `http://127.0.0.1:8080/api/submit-answers`;
+  const SUBMIT_SINGLE_URL = `http://127.0.0.1:8080/api/submit-answer`;
   const GENERATE_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/generate-questions`;
 
   useEffect(() => {
     if (!token) {
-      alert("Please log in first.");
+      alert("log in first");
       navigate("/login");
       return;
     }
@@ -33,6 +35,14 @@ function Questions() {
       });
       const data = await res.json();
       setQuestions(data);
+      
+      //setting start times for each question
+      const newStartTimes = {};
+      data.forEach(q => {
+        newStartTimes[q.questionID] = Math.floor(Date.now() / 1000);
+      });
+      setStartTimes(newStartTimes);
+      
     } catch (err) {
       alert("Error fetching questions");
     } finally {
@@ -58,40 +68,102 @@ function Questions() {
   };
 
   const generateMoreQuestions = async () => {
-    await fetch(GENERATE_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+    try {
+      await fetch(GENERATE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      fetchQuestions();
+    } catch (err) {
+      alert("Error generating new questions");
+    }
+  };
+
+  const submitSingleAnswer = async (questionId) => {
+    try {
+      const question = questions.find(q => q.questionID === questionId);
+      if (!question) return;
+
+      const answerData = {
+        questionId: question.questionID,
+        questionTypeId: question.questionTypeID,
+        userAnswer: userAnswers[question.questionID] || '',
+        correctAnswer: question.correctAnswer,
+        constraints: question.constraints || '',
+        startTime: startTimes[question.questionID]
+      };
+
+      const res = await fetch(SUBMIT_SINGLE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(answerData)
+      });
+
+      const result = await res.json();
+      
+      if (result.success) {
+        setSubmissionResults(prev => ({
+          ...prev,
+          [questionId]: result.data
+        }));
+      } else {
+        alert(`Error: ${result.error || "Failed to submit answer"}`);
       }
-    });
-    fetchQuestions();
+    } catch (err) {
+      alert("Error submitting answer");
+    }
   };
 
   const submitAnswers = async () => {
-    const answersData = questions.map(q => ({
-      questionId: q.questionID,
-      questionTypeId: q.questionTypeID,
-      userAnswer: userAnswers[q.questionID] || '',
-      correctAnswer: q.correctAnswer,
-      constraints: q.constraints || ''
-    }));
+    try {
+      const answersData = questions.map(q => ({
+        questionId: q.questionID,
+        questionTypeId: q.questionTypeID,
+        userAnswer: userAnswers[q.questionID] || '',
+        correctAnswer: q.correctAnswer,
+        constraints: q.constraints || '',
+        startTime: startTimes[q.questionID]
+      }));
 
-    const res = await fetch(SUBMIT_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(answersData)
-    });
+      const res = await fetch(SUBMIT_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(answersData)
+      });
 
-    const result = await res.json();
-    const resultsMap = result.results.reduce((acc, r) => {
-      acc[r.questionId] = r;
-      return acc;
-    }, {});
-    setSubmissionResults(resultsMap);
+      const result = await res.json();
+      if (!result.results) {
+        alert("Invalid response from server");
+        return;
+      }
+      
+      const resultsMap = result.results.reduce((acc, r) => {
+        if (r.success) {
+          acc[r.questionId] = {
+            isCorrect: r.isCorrect,
+            feedback: r.feedback,
+            hint: r.hint,
+            points: r.points
+          };
+        } else {
+          alert(`Error with question ${r.questionId}: ${r.error}`);
+        }
+        return acc;
+      }, {});
+      
+      setSubmissionResults(resultsMap);
+    } catch (err) {
+      alert("Error submitting answers");
+    }
   };
 
   const renderMCQ = (q, i) => (
@@ -113,6 +185,13 @@ function Questions() {
         ))}
       </div>
       {renderFeedback(q.questionID)}
+      {!submissionResults[q.questionID] && userAnswers[q.questionID] && (
+        <button 
+          onClick={() => submitSingleAnswer(q.questionID)} 
+          className="submit-single-button">
+          Submit Answer
+        </button>
+      )}
     </div>
   );
 
@@ -140,6 +219,13 @@ function Questions() {
           ))}
         </p>
         {renderFeedback(q.questionID)}
+        {!submissionResults[q.questionID] && answers.length > 0 && answers.every(a => a) && (
+          <button 
+            onClick={() => submitSingleAnswer(q.questionID)} 
+            className="submit-single-button">
+            Submit Answer
+          </button>
+        )}
       </div>
     );
   };
@@ -186,6 +272,7 @@ function Questions() {
                       onClick={() => handleClearBlank(index)}
                       className="clear-blank-btn"
                     >
+                      ×
                     </button>
                   )}
                 </span>
@@ -207,6 +294,13 @@ function Questions() {
           ))}
         </div>
         {renderFeedback(q.questionID)}
+        {!submissionResults[q.questionID] && blanks.every(b => b) && (
+          <button 
+            onClick={() => submitSingleAnswer(q.questionID)} 
+            className="submit-single-button">
+            Submit Answer
+          </button>
+        )}
       </div>
     );
   };
@@ -216,12 +310,19 @@ function Questions() {
       <p className="question-text">{i + 1}. {q.questionText}</p>
       <textarea
         className="coding-textarea"
-        rows={4}
+        rows={6}
         value={userAnswers[q.questionID] || ""}
         onChange={e => handleAnswerChange(q.questionID, e.target.value)}
         disabled={!!submissionResults[q.questionID]}
       />
       {renderFeedback(q.questionID)}
+      {!submissionResults[q.questionID] && userAnswers[q.questionID] && (
+        <button 
+          onClick={() => submitSingleAnswer(q.questionID)} 
+          className="submit-single-button">
+          Submit Answer
+        </button>
+      )}
     </div>
   );
 
@@ -236,6 +337,7 @@ function Questions() {
             {result.isCorrect ? '✓' : '✗'}
           </span>
           {result.isCorrect ? "Correct!" : "Incorrect"}
+          {result.points > 0 && <span className="points-earned"> +{result.points} points</span>}
         </div>
         {result.feedback && (
           <div className="feedback-text">
@@ -276,15 +378,11 @@ function Questions() {
         })}
       </div>
       <div className="action-buttons">
-        {Object.keys(submissionResults).length === 0 && (
-          <button
-            onClick={submitAnswers}
-            disabled={Object.keys(userAnswers).length !== questions.length}
-            className="submit-button"
-          >
-            Submit
-          </button>
-        )}
+        <button onClick={submitAnswers} 
+          disabled={Object.keys(userAnswers).length === 0 || Object.keys(userAnswers).length === Object.keys(submissionResults).length} 
+          className="submit-button">
+          Submit All
+        </button>
         <button onClick={generateMoreQuestions} className="generate-button">
           More Questions?
         </button>

@@ -378,7 +378,7 @@ class Prompt:
                 response_mime_type="application/json",
                 response_schema=genai.types.Schema(
                     type = genai.types.Type.OBJECT,
-                    required = ["questionid", "user_answer", "hint", "feedback", "isCorrect","points"],
+                    required = ["questionid", "user_answer", "hint", "feedback", "isCorrect", "points"],
                     properties = {
                         "questionid": genai.types.Schema(
                             type = genai.types.Type.STRING,
@@ -401,8 +401,8 @@ class Prompt:
                             description = "True if the user's answer logically solves the question as written. False otherwise",
                         ),
                         "points": genai.types.Schema(
-                            type = genai.types.Type.INTEGER,
-                            description = "Score out of 10 based on how well the student's code meets the question's requirements"
+                            type = genai.types.Type.NUMBER,
+                            description = "Score out of 10 based on how well the student's code meets the question's requirements",
                         ),
                     },
                 ),
@@ -497,7 +497,7 @@ class Prompt:
                         ),
                         "points": genai.types.Schema(
                             type = genai.types.Type.INTEGER,
-                            description = "Score out of 10 based on how well the student's code meets the question's requirements"
+                            description = "Score out of 7 based on how well the student's code meets the question's requirements"
                         ),
                     },
                 ),
@@ -514,7 +514,7 @@ class Prompt:
                         - for hints, use a short Socratic-style hint (that encourages thinking without giving the answer).
                         - Keep all feedback short and focused, (not quite right, your code does...), Do NOT give away the correct answer, do not give tips or suggestions
                         
-                        based on estimated time to solve in seconds ("avgTimeSeconds") , give score out of 10 in points
+                        based on estimated time to solve in seconds ("avgTimeSeconds") , give score out of 7 in points
                         
                         Your response MUST follow this exact JSON schema"""),
                                 ],

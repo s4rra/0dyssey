@@ -1,150 +1,149 @@
 import json
-from prompt import *
-from services.rewards import *
+from prompt import Prompt
 from config.settings import supabase_client
+from datetime import datetime
+from services.user_service import *
+
+class ScoreCalculator:
+    BASE_POINTS = {
+        1: 5,  # MCQ
+        4: 8   # Drag-drop
+    }
+
+    SKILL_BONUS = {
+        1: 1,  # Beginner
+        2: 2,  # Intermediate
+        3: 3   # Advanced
+    }
+
+    @staticmethod
+    def calculate_points(question_type_id, is_correct, retry, time_taken, skill_level, avg_time, base_score=None):
+        if not is_correct:
+            return 0
+
+        base = base_score if base_score is not None else ScoreCalculator.BASE_POINTS.get(question_type_id, 0)
+        skill_bonus = ScoreCalculator.SKILL_BONUS.get(skill_level, 0)
+        retry_penalty = max(0, retry - 1)
+
+        time_bonus = 0
+        if time_taken is not None and avg_time:
+            if time_taken < avg_time * 0.5:
+                time_bonus = 3
+            elif time_taken < avg_time * 0.75:
+                time_bonus = 2
+            elif time_taken < avg_time:
+                time_bonus = 1
+
+        total = base + skill_bonus + time_bonus - retry_penalty
+        return max(total, 1)
+
 
 class Answer:
-    def __init__(self, question_id, user_id, user_answer, correct_answer, question_type_id, constraints=""):
-        self.question_id = question_id
+    #entity modeling
+    def __init__(self, answer_data, user_id, skill_level=None):
+        self.question_id = answer_data["questionId"]
         self.user_id = user_id
-        self.user_answer = user_answer
-        self.correct_answer = correct_answer
-        self.question_type_id = question_type_id
-        self.constraints = constraints
-        self.is_correct = None
-        self.feedback = None
-        self.hint = None
-        self.retry = 0  # Default until retry support is added
-        self.time_taken = None  # Placeholder
-        self.skill_level = None  # Will be passed in from submit_answers
+        self.question_type_id = answer_data.get("questionTypeId")
+        self.user_answer = answer_data.get("userAnswer", "")
+        self.correct_answer = answer_data.get("correctAnswer", "")
+        self.constraints = answer_data.get("constraints", "")
+        self.skill_level = skill_level
+        
+        self.is_correct = False
+        self.feedback = ""
+        self.hint = ""
         self.points = 0
- 
+        self.retry = self.get_retry_count()
+        
+        self.started_at = answer_data.get("startTime", datetime.utcnow())
+        if not isinstance(self.started_at, datetime):
+            try:
+                self.started_at = datetime.fromtimestamp(self.started_at)
+            except (TypeError, ValueError):
+                self.started_at = datetime.utcnow()
+                
+        self.completed_at = datetime.utcnow()
+        
+
+    def get_retry_count(self):
+        try:
+            response = (
+                supabase_client.table("Answer")
+                .select("retry")
+                .eq("userID", self.user_id)
+                .eq("questionID", self.question_id)
+                .maybe_single()
+                .execute()
+            )
+            if response.data:
+                return response.data.get("retry", 0) + 1
+            return 1
+        except Exception:
+            return 1
+
+    def calculate_time_taken(self):
+        return int((self.completed_at - self.started_at).total_seconds())
+
     def validate(self):
-        result = {
-            "questionId": self.question_id,
-            "isCorrect": False,
-            "status": 200
-        }
-        try:
-            # MCQ validation
-            if self.question_type_id == 1:
-                self.is_correct = (self.user_answer == self.correct_answer)
-                if not self.is_correct:
-                    self.feedback = "Not quite right. Try re-reading the question and eliminate obvious wrong answers."
-                    self.hint = "Think about how Python handles this concept. Is there a keyword or structure being overlooked?"
-
-                result["isCorrect"] = self.is_correct
-            
-            # Coding question validation
-            elif self.question_type_id == 2:
-                question_data = {
-                    "questionid": self.question_id,
-                    "question": self.correct_answer,
-                    "user_answer": self.user_answer,
-                    "constraints": self.constraints
-                }
-                
-                response = json.loads(Prompt.check_coding(json.dumps(question_data)))
-                
-                if "error" in response:
-                    return {
-                        "questionId": self.question_id,
-                        "error": response["error"],
-                        "status": 400
-                    }
-                
-                # Update attributes from response
-                self.is_correct = response.get("isCorrect", False)
-                self.feedback = response.get("feedback", "")
-                self.hint = response.get("hint", "")
-                # Update result
-                result.update({
-                    "isCorrect": self.is_correct,
-                    "feedback": self.feedback,
-                    "hint": self.hint
-                })
-                    
-            # Fill-in-the-blank validation
-            elif self.question_type_id == 3:
-                question_data = {
-                    "questionid": self.question_id,
-                    "user_answer": self.user_answer,
-                    "correct_answer": self.correct_answer
-                }
-                response = json.loads(Prompt.check_fill_in(json.dumps(question_data)))
-                
-                if "error" in response:
-                    return {
-                        "questionId": self.question_id,
-                        "error": response["error"],
-                        "status": 400
-                    }
-                
-                self.is_correct = response.get("isCorrect", False)
-                self.feedback = response.get("feedback", "")
-                self.hint = response.get("hint", "")
-                result.update({
-                    "isCorrect": self.is_correct,
-                    "feedback": self.feedback,
-                    "hint": self.hint
-                })
-
-            # Drag-and-drop validation
-            elif self.question_type_id == 4:
-                self.is_correct = (self.user_answer == self.correct_answer)
-                if not self.is_correct:
-                    self.feedback = "Not quite right. Try re-reading the question and eliminate obvious wrong answers."
-                    self.hint = "Think about how Python handles this concept. Is there a keyword or structure being overlooked?"
-
-                result["isCorrect"] = self.is_correct
-                
-            #error handling
-            else:
-                return {
-                    "questionId": self.question_id,
-                    "error": f"Unknown question type: {self.question_type_id}",
-                    "status": 400
-                }
-                
-        except Exception as e:
-            return {
-                "questionId": self.question_id,
-                "error": f"Validation error: {str(e)}",
-                "status": 500
+        if self.question_type_id == 1 or self.question_type_id == 4:
+            self.is_correct = self.user_answer == self.correct_answer
+            if not self.is_correct:
+                self.feedback = "Not quite right."
+                self.hint = "Think carefully about Python logic."
+        elif self.question_type_id == 2:
+            req = {
+                "questionid": self.question_id,
+                "question": self.correct_answer,
+                "user_answer": self.user_answer,
+                "constraints": self.constraints
             }
-        return result
-    
-    def set_evaluation(self, result_data, time_taken, retry, skill_level):
-        self.is_correct = result_data.get("isCorrect", False)
-        self.feedback = result_data.get("feedback", "")
-        self.hint = result_data.get("hint", "")
-        self.time_taken = time_taken
-        self.retry = Answer.get_retry_count(self.user_id, self.question_id) + 1
+            response = json.loads(Prompt.check_coding(json.dumps(req)))
+            if "error" in response:
+                raise Exception(response["error"])
+            self.is_correct = response.get("isCorrect", False)
+            self.feedback = response.get("feedback", "")
+            self.hint = response.get("hint", "")
+            self.points = response.get("points") or ScoreCalculator.BASE_POINTS.get(self.question_type_id, 0)
+        elif self.question_type_id == 3:
+            req = {
+                "questionid": self.question_id,
+                "user_answer": self.user_answer,
+                "correct_answer": self.correct_answer
+            }
+            response = json.loads(Prompt.check_fill_in(json.dumps(req)))
+            if "error" in response:
+                raise Exception(response["error"])
+            self.is_correct = response.get("isCorrect", False)
+            self.feedback = response.get("feedback", "")
+            self.hint = response.get("hint", "")
+            self.points = response.get("points") or ScoreCalculator.BASE_POINTS.get(self.question_type_id, 0)
 
-        # Call reward system
-        # Fetch avgTimeSeconds from Question table
+    def apply_scoring(self):
         try:
-            q_data = supabase_client.table("Question").select("avgTimeSeconds").eq("questionID", self.question_id).single().execute()
+            res = supabase_client.table("Question").select("avgTimeSeconds").eq("questionID", self.question_id).single().execute()
+            avg_time = res.data.get("avgTimeSeconds", 120)
+        except Exception:
+            avg_time = 120
 
-            avg_time = q_data.data.get("avgTimeSeconds", 120)  # fallback to 120s if missing
+        time_taken = self.calculate_time_taken()
 
-        except Exception as e:
-            avg_time = 120  # default fallback
-            print(f"[Warning] Failed to fetch avg time for question {self.question_id}: {e}")
-
-        # Call reward system
-        from services.rewards import RewardSystem
-        self.points = RewardSystem.calculate_points(
+        #bonus too
+        self.points = ScoreCalculator.calculate_points(
             question_type_id=self.question_type_id,
             is_correct=self.is_correct,
             retry=self.retry,
-            time_taken=self.time_taken,
-            skill_level=skill_level,
-            avg_time=avg_time
+            time_taken=time_taken,
+            skill_level=self.skill_level,
+            avg_time=avg_time,
+            base_score=self.points if self.points > 0 else None
         )
 
-    def persist_answer(self):
+    def persist(self):
         try:
+            # Convert datetime objects to timestamps
+            started_timestamp = int(self.started_at.timestamp()) if isinstance(self.started_at, datetime) else self.started_at
+            completed_timestamp = int(self.completed_at.timestamp()) if isinstance(self.completed_at, datetime) else self.completed_at
+            
             # Check if answer already exists
             existing = (
                 supabase_client.table("Answer")
@@ -156,7 +155,6 @@ class Answer:
             )
 
             if existing.data:
-                # Update existing answer
                 response = (
                     supabase_client.table("Answer")
                     .update({
@@ -167,13 +165,13 @@ class Answer:
                         "hint": self.hint,
                         "points": self.points,
                         "retry": self.retry,
-                        "timeTakenSeconds": self.time_taken
+                        "startedAt": started_timestamp,
+                        "completedAt": completed_timestamp
                     })
                     .eq("answerID", existing.data["answerID"])
                     .execute()
                 )
             else:
-                # Insert new answer
                 response = (
                     supabase_client.table("Answer")
                     .insert([{
@@ -186,7 +184,8 @@ class Answer:
                         "hint": self.hint,
                         "points": self.points,
                         "retry": self.retry,
-                        "timeTakenSeconds": self.time_taken
+                        "startedAt": started_timestamp,
+                        "completedAt": completed_timestamp
                     }])
                     .execute()
                 )
@@ -194,80 +193,49 @@ class Answer:
             return {"success": True, "data": response.data}
         except Exception as e:
             return {"success": False, "error": str(e), "status": 500}
-
+        
     @staticmethod
-    def get_retry_count(user_id, question_id):
-        try:
-            response = (
-                supabase_client.table("Answer")
-                .select("retry")
-                .eq("userID", user_id)
-                .eq("questionID", question_id)
-                .maybe_single()
-                .execute()
-            )
-            if response.data:
-                return response.data.get("retry", 0)
-            return 0
-        except Exception as e:
-            print("Retry fetch error:", str(e))
-            return 0
-
-    @staticmethod
-    def calculate_time_taken(start_time):
-        from datetime import datetime
-        try:
-            end_time = datetime.utcnow()
-            duration = (end_time - start_time).total_seconds()
-            return int(duration)
-        except Exception as e:
-            print("Time tracking error:", str(e))
-            return 60  # fallback
-
-    @classmethod
-    def submit_answers(cls, user_id, answers_data, skill_level):
+    def submit_answers(user_id, answers_data, skill_level):
+        """
+        Process and submit multiple answers at once
+        
+        Args:
+            user_id (str): The ID of the user submitting answers
+            answers_data (list): A list of answer data dictionaries
+            skill_level (int): The user's skill level
+            
+        Returns:
+            list: A list of results for each answer submission
+        """
         results = []
+        
         for answer_data in answers_data:
             try:
-                #create answer object
-                answer = cls(
-                    question_id=answer_data['questionId'],
-                    user_id=user_id,
-                    user_answer=str(answer_data['userAnswer']),
-                    question_type_id=answer_data['questionTypeId'],
-                    correct_answer=answer_data['correctAnswer'],
-                    constraints=answer_data.get('constraints', '')
-                )
+                answer = Answer(answer_data, user_id, skill_level)
+                answer.validate()
+                answer.apply_scoring()
+                result = answer.persist()
                 
-                # Validate the answer
-                validation_result = answer.validate()
-                
-                # Use placeholders for retry/time (real values can be injected later)
-                answer.set_evaluation(
-                    result_data=validation_result,
-                    time_taken=answer_data.get('timeTaken', 60),
-                    retry=answer_data.get('retry', 0),
-                    skill_level=skill_level
-                )
-
-                persist_result = answer.persist_answer()
-                
-                # Combine results
-                validation_result.update({
-                    "pointsAwarded": answer.points,
-                    "persistenceSuccess": persist_result['success'],
-                    "persistenceError": persist_result.get('error', '')
-                })
-                
-                results.append(validation_result)
-            
+                if result["success"]:
+                    results.append({
+                        "questionId": answer.question_id,
+                        "success": True,
+                        "isCorrect": answer.is_correct,
+                        "points": answer.points,
+                        "feedback": answer.feedback,
+                        "hint": answer.hint
+                    })
+                else:
+                    results.append({
+                        "questionId": answer.question_id,
+                        "success": False,
+                        "error": result["error"]
+                    })
             except Exception as e:
                 results.append({
-                    "questionId": answer_data.get('questionId', 'unknown'),
-                    "error": str(e),
-                    "persistenceSuccess": False,
-                    "status": 500
+                    "questionId": answer_data.get("questionId", "unknown"),
+                    "success": False,
+                    "error": str(e)
                 })
-        
+                
         return results
-        
