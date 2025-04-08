@@ -25,9 +25,9 @@ def submit_answer():
         skill_level = user_profile["currentSkillLevel"]
         
         answer = Answer(data, user_id, skill_level)
-        validate_answer(answer)
-        apply_scoring(answer)
-        result = persist_answer(answer)
+        answer.validate()
+        answer.apply_scoring()
+        result = answer.persist()
         
         if not result["success"]:
             return jsonify({"error": result["error"]}), result.get("status", 500)
@@ -66,7 +66,7 @@ def submit_answers():
         # Get the list of answers
         answers_data = request.get_json()
         if not isinstance(answers_data, list):
-            return jsonify({"error": "expecting a list of answers"}), 400
+            return jsonify({"error": "expect a list of answers"}), 400
         
         results = Answer.submit_answers(user_id, answers_data, skill_level)
         

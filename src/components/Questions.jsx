@@ -272,7 +272,6 @@ function Questions() {
                       onClick={() => handleClearBlank(index)}
                       className="clear-blank-btn"
                     >
-                      ×
                     </button>
                   )}
                 </span>

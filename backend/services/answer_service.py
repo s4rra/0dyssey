@@ -37,23 +37,19 @@ class ScoreCalculator:
         total = base + skill_bonus + time_bonus - retry_penalty
         return max(total, 1)
 
-
 class Answer:
-    #entity modeling
-    def __init__(self, answer_data, user_id, skill_level=None):
+    def __init__( answer_data, user_id, skill_level=None):
         self.question_id = answer_data["questionId"]
         self.user_id = user_id
         self.question_type_id = answer_data.get("questionTypeId")
         self.user_answer = answer_data.get("userAnswer", "")
         self.correct_answer = answer_data.get("correctAnswer", "")
         self.constraints = answer_data.get("constraints", "")
-        self.skill_level = skill_level
         
         self.is_correct = False
         self.feedback = ""
         self.hint = ""
         self.points = 0
-        self.retry = self.get_retry_count()
         
         self.started_at = answer_data.get("startTime", datetime.utcnow())
         if not isinstance(self.started_at, datetime):
@@ -64,6 +60,9 @@ class Answer:
                 
         self.completed_at = datetime.utcnow()
         
+
+        self.retry = self.get_retry_count()
+        self.skill_level = skill_level
 
     def get_retry_count(self):
         try:
@@ -85,34 +84,62 @@ class Answer:
         return int((self.completed_at - self.started_at).total_seconds())
 
     def validate(self):
-        if self.question_type_id == 1 or self.question_type_id == 4:
+        def parse_response(raw):
+            if isinstance(raw, dict):
+                if "error" in raw:
+                    raise Exception(raw["error"])
+                return raw
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError as e:
+                raise Exception(f"Invalid JSON from model: {str(e)}")
+
+        #time taken
+        time_taken = self.calculate_time_taken()
+
+        # avg time from DB
+        try:
+            res = supabase_client.table("Question").select("avgTimeSeconds").eq("questionID", self.question_id).single().execute()
+            avg_time = res.data.get("avgTimeSeconds", 90)
+        except Exception:
+            avg_time = 90
+
+        # MCQ & Drag-Drop
+        if self.question_type_id in (1, 4):
             self.is_correct = self.user_answer == self.correct_answer
             if not self.is_correct:
-                self.feedback = "Not quite right."
-                self.hint = "Think carefully about Python logic."
+                self.feedback = "Not quite right"
+
+        # Coding
         elif self.question_type_id == 2:
             req = {
                 "questionid": self.question_id,
                 "question": self.correct_answer,
                 "user_answer": self.user_answer,
-                "constraints": self.constraints
+                "constraints": self.constraints,
+                "avgTimeSeconds": avg_time,
+                "timeTaken": time_taken
             }
-            response = json.loads(Prompt.check_coding(json.dumps(req)))
-            if "error" in response:
-                raise Exception(response["error"])
+            raw_response = Prompt.check_coding(json.dumps(req))
+            response = parse_response(raw_response)
+
             self.is_correct = response.get("isCorrect", False)
             self.feedback = response.get("feedback", "")
             self.hint = response.get("hint", "")
             self.points = response.get("points") or ScoreCalculator.BASE_POINTS.get(self.question_type_id, 0)
+
+        #fill-in-the-blank
         elif self.question_type_id == 3:
             req = {
                 "questionid": self.question_id,
                 "user_answer": self.user_answer,
-                "correct_answer": self.correct_answer
+                "correct_answer": self.correct_answer,
+                "avgTimeSeconds": avg_time,
+                "timeTaken": time_taken
             }
-            response = json.loads(Prompt.check_fill_in(json.dumps(req)))
-            if "error" in response:
-                raise Exception(response["error"])
+            raw_response = Prompt.check_fill_in(json.dumps(req))
+            response = parse_response(raw_response)
+
             self.is_correct = response.get("isCorrect", False)
             self.feedback = response.get("feedback", "")
             self.hint = response.get("hint", "")
@@ -127,7 +154,7 @@ class Answer:
 
         time_taken = self.calculate_time_taken()
 
-        #bonus too
+        #bonus
         self.points = ScoreCalculator.calculate_points(
             question_type_id=self.question_type_id,
             is_correct=self.is_correct,
@@ -138,18 +165,18 @@ class Answer:
             base_score=self.points if self.points > 0 else None
         )
 
-    def persist(self):
+    def persist(ans):
         try:
-            # Convert datetime objects to timestamps
-            started_timestamp = int(self.started_at.timestamp()) if isinstance(self.started_at, datetime) else self.started_at
-            completed_timestamp = int(self.completed_at.timestamp()) if isinstance(self.completed_at, datetime) else self.completed_at
+            # Convert datetime objects to timestamps for storage
+            started_timestamp = int(ans.started_at.timestamp()) if isinstance(ans.started_at, datetime) else ans.started_at
+            completed_timestamp = int(ans.completed_at.timestamp()) if isinstance(ans.completed_at, datetime) else ans.completed_at
             
             # Check if answer already exists
             existing = (
                 supabase_client.table("Answer")
                 .select("answerID")
-                .eq("userID", self.user_id)
-                .eq("questionID", self.question_id)
+                .eq("userID", ans.user_id)
+                .eq("questionID", ans.question_id)
                 .single()
                 .execute()
             )
@@ -158,13 +185,13 @@ class Answer:
                 response = (
                     supabase_client.table("Answer")
                     .update({
-                        "userAnswer": self.user_answer,
-                        "correctAnswer": self.correct_answer,
-                        "correct": self.is_correct,
-                        "feedback": self.feedback,
-                        "hint": self.hint,
-                        "points": self.points,
-                        "retry": self.retry,
+                        "userAnswer": ans.user_answer,
+                        "correctAnswer": ans.correct_answer,
+                        "correct": ans.is_correct,
+                        "feedback": ans.feedback,
+                        "hint": ans.hint,
+                        "points": ans.points,
+                        "retry": ans.retry,
                         "startedAt": started_timestamp,
                         "completedAt": completed_timestamp
                     })
@@ -175,15 +202,15 @@ class Answer:
                 response = (
                     supabase_client.table("Answer")
                     .insert([{
-                        "questionID": self.question_id,
-                        "userID": self.user_id,
-                        "userAnswer": self.user_answer,
-                        "correctAnswer": self.correct_answer,
-                        "correct": self.is_correct,
-                        "feedback": self.feedback,
-                        "hint": self.hint,
-                        "points": self.points,
-                        "retry": self.retry,
+                        "questionID": ans.question_id,
+                        "userID": ans.user_id,
+                        "userAnswer": ans.user_answer,
+                        "correctAnswer": ans.correct_answer,
+                        "correct": ans.is_correct,
+                        "feedback": ans.feedback,
+                        "hint": ans.hint,
+                        "points": ans.points,
+                        "retry": ans.retry,
                         "startedAt": started_timestamp,
                         "completedAt": completed_timestamp
                     }])
@@ -196,17 +223,6 @@ class Answer:
         
     @staticmethod
     def submit_answers(user_id, answers_data, skill_level):
-        """
-        Process and submit multiple answers at once
-        
-        Args:
-            user_id (str): The ID of the user submitting answers
-            answers_data (list): A list of answer data dictionaries
-            skill_level (int): The user's skill level
-            
-        Returns:
-            list: A list of results for each answer submission
-        """
         results = []
         
         for answer_data in answers_data:

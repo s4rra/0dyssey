@@ -425,7 +425,7 @@ class Prompt:
                             Do NOT reveal the correct answer.
                             Do NOT praise incorrect answers.
                             
-                            based on estimated time to solve in seconds ("avgTimeSeconds") , give score out of 10 in points
+                            based on time taken to solve in seconds compared to avgTimeSeconds , give score out of 10 in points
                             """),
                             ],
                         )
@@ -514,7 +514,7 @@ class Prompt:
                         - for hints, use a short Socratic-style hint (that encourages thinking without giving the answer).
                         - Keep all feedback short and focused, (not quite right, your code does...), Do NOT give away the correct answer, do not give tips or suggestions
                         
-                        based on estimated time to solve in seconds ("avgTimeSeconds") , give score out of 7 in points
+                        based on time taken to solve in seconds compared to avgTimeSeconds , give score out of 7 in points
                         
                         Your response MUST follow this exact JSON schema"""),
                                 ],
