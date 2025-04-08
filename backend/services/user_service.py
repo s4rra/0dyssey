@@ -44,10 +44,10 @@ class UserService:
     @staticmethod
     def login(email, password):
         try:
-            user_response = supabase_client.from_("User").select("userID, Password").eq("Email", email).execute()
+            # Change the query to include streak information
+            user_response = supabase_client.from_("User").select("userID, Password, streakLength, lastLogin").eq("Email", email).execute()
             user_data = user_response.data
             
-
             if not user_data:
                 return {"error": "Invalid email or password"}, 401  # User not found
 
@@ -57,16 +57,45 @@ class UserService:
             if not check_password_hash(user["Password"], password):
                 return {"error": "Invalid email or password"}, 401
 
+            # Streak calculation
+            current_date = datetime.now(timezone.utc).date()
+            
+            streak_length = user.get("streakLength", 0)
+            last_login = None
+            
+            if user.get("lastLogin"):
+                last_login = datetime.fromisoformat(user["lastLogin"]).date()
+                
+            if last_login is None:
+                new_streak = 0
+            elif last_login == current_date:  
+                new_streak = streak_length
+            elif (current_date - last_login).days == 1:
+                new_streak = streak_length + 1
+            else:
+                new_streak = 0
+            
+            # Update user with new streak info
+            update_response = supabase_client.from_("User").update({
+                "streakLength": new_streak,
+                "lastLogin": current_date.isoformat()
+            }).eq("userID", user["userID"]).execute()
+
             # JWT token for session authentication
             token_payload = {
-               "userID": user["userID"],
-               "exp": datetime.now(timezone.utc) + timedelta(hours=2)
+                "userID": user["userID"],
+                "exp": datetime.now(timezone.utc) + timedelta(hours=2)
             }
             access_token = jwt.encode(token_payload, SECRET_KEY, algorithm="HS256")
             
-            print("JWT_SECRET_KEY during encoding:", SECRET_KEY)#just used when testing
+            print("JWT_SECRET_KEY during encoding:", SECRET_KEY)  # just used when testing
 
-            return {"message": "Login successful", "access_token": access_token}, 200
+            # Return streak info along with the token
+            return {
+                "message": "Login successful", 
+                "access_token": access_token,
+                "streak": new_streak
+            }, 200
 
         except Exception as e:
             print(f"Login error: {e}")
