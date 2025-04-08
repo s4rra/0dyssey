@@ -1,3 +1,4 @@
+import json
 from flask import Blueprint, request, jsonify
 from services.answer_service import Answer
 from services.user_service import UserService
@@ -7,22 +8,28 @@ answer_bp = Blueprint("answer_bp", __name__)
 
 @answer_bp.route("/submit-answers", methods=["POST"])
 def submit_answers():
-    print("✅ /api/submit-answers HIT")
+    print("HIT!!!!!!!!!")
     try:
         auth_result = verify_token()
         if "error" in auth_result:
             return jsonify(auth_result), 401
 
-        user_id = auth_result["id"]
+        user_id = auth_result
         user_profile, status = UserService.get_user_profile(user_id)
         if status != 200:
             return jsonify(user_profile), status
 
-        skill_level = user_profile["currentSkillLevel"]
-        answers_data = request.get_json()
+        skill_level = user_profile["chosenSkillLevel"]
+        raw_data = request.get_data(as_text=True)
 
-        # The submit_answers method returns a dict with "results" key
-        # Just pass it directly to jsonify
+        try:
+            answers_data = json.loads(raw_data)
+        except json.JSONDecodeError as e:
+            return jsonify({"error": f"Invalid JSON: {str(e)}"}), 400
+
+        if not isinstance(answers_data, list):
+            return jsonify({"error": "payload must be a list of answers"}), 400
+
         results = Answer.submit_answers(user_id, answers_data, skill_level)
         return jsonify(results), 200
 

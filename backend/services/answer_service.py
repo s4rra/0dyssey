@@ -199,12 +199,16 @@ class Answer:
         except Exception as e:
             raise Exception("db save failed: " + str(e))
 
-
     @staticmethod
     def submit_answers(user_id, answers_data, skill_level):
+        print("📥 RAW answers_data type:", type(answers_data))
+        print("📥 RAW answers_data value:", answers_data)
+
         try:
             if isinstance(answers_data, str):
                 answers_data = json.loads(answers_data)
+                print("✅ Parsed answers_data type:", type(answers_data))
+
         except json.JSONDecodeError:
             return {"results": [], "error": "Invalid JSON input"}
 
@@ -213,8 +217,8 @@ class Answer:
 
         for a in answers_data:
             # 🔍 SAFELY LOG EACH ENTRY
-            print("🟡 ENTRY TYPE:", type(a))
-            print("🟡 ENTRY VALUE:", a)
+            print("🔄 Entry in loop type:", type(a))
+            print("🔄 Entry in loop value:", a)
 
             if isinstance(a, str):
                 try:
@@ -255,7 +259,7 @@ class Answer:
             old_points = user_data.get("points", 0)
             new_total = old_points + total_points
             supabase_client.table("User") \
-                .update({"points": new_total}) \
+                .update({"Points": new_total}) \
                 .eq("userID", user_id) \
                 .execute()
         except Exception as e:
