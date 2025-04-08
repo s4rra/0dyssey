@@ -1,257 +1,264 @@
-import json
-from prompt import Prompt
-from config.settings import supabase_client
-from datetime import datetime
-from services.user_service import *
+from datetime import datetime #for calculating when the question started and ended
+import json #parse and serialize data to/from the Prompt class
+from prompt import Prompt # for validating coding/fill-in answers
+from config.settings import supabase_client #database client connected
 
 class ScoreCalculator:
+    #only for MCQ and DragDrop (prompt types return points directly)
     BASE_POINTS = {
         1: 5,  # MCQ
         4: 8   # Drag-drop
     }
-
+    
+    #bonus based on skill level
     SKILL_BONUS = {
-        1: 1,  # Beginner
-        2: 2,  # Intermediate
-        3: 3   # Advanced
+        1: 1,
+        2: 2,
+        3: 3
     }
 
+    #base_score.... either fixed for MCQ/drag or returned from the prompt coding/fill
     @staticmethod
-    def calculate_points(question_type_id, is_correct, retry, time_taken, skill_level, avg_time, base_score=None):
+    def apply_bonuses(base_score, is_correct, retry, time_taken, avg_time, skill_level):
         if not is_correct:
             return 0
 
-        base = base_score if base_score is not None else ScoreCalculator.BASE_POINTS.get(question_type_id, 0)
         skill_bonus = ScoreCalculator.SKILL_BONUS.get(skill_level, 0)
-        retry_penalty = max(0, retry - 1)
+        retry_penalty = retry
+        time_bonus = 4 if time_taken < avg_time else 0
 
-        time_bonus = 0
-        if time_taken is not None and avg_time:
-            if time_taken < avg_time * 0.5:
-                time_bonus = 3
-            elif time_taken < avg_time * 0.75:
-                time_bonus = 2
-            elif time_taken < avg_time:
-                time_bonus = 1
-
-        total = base + skill_bonus + time_bonus - retry_penalty
+        total = base_score + skill_bonus + time_bonus - retry_penalty
         return max(total, 1)
 
 class Answer:
-    def __init__( answer_data, user_id, skill_level=None):
-        self.question_id = answer_data["questionId"]
+    def __init__(self, answer_data, user_id, skill_level=None):
+        if isinstance(answer_data, str):
+            answer_data = json.loads(answer_data)
+        
         self.user_id = user_id
+        self.question_id = answer_data["questionId"]
         self.question_type_id = answer_data.get("questionTypeId")
         self.user_answer = answer_data.get("userAnswer", "")
-        self.correct_answer = answer_data.get("correctAnswer", "")
-        self.constraints = answer_data.get("constraints", "")
-        
+        self.start_time = answer_data.get("startTime")
+        self.end_time = answer_data.get("endTime")
+        self.skill_level = skill_level
+        self.time_taken = max(1, int(self.end_time - self.start_time))
+
+        self.question_text = ""
+        self.correct_answer = ""
+        self.constraints = ""
+        self.avg_time = 90
+
         self.is_correct = False
+        self.points = 0
         self.feedback = ""
         self.hint = ""
-        self.points = 0
-        
-        self.started_at = answer_data.get("startTime", datetime.utcnow())
-        if not isinstance(self.started_at, datetime):
-            try:
-                self.started_at = datetime.fromtimestamp(self.started_at)
-            except (TypeError, ValueError):
-                self.started_at = datetime.utcnow()
-                
-        self.completed_at = datetime.utcnow()
-        
-
         self.retry = self.get_retry_count()
-        self.skill_level = skill_level
+
+        self.load_question_metadata()
 
     def get_retry_count(self):
         try:
-            response = (
-                supabase_client.table("Answer")
-                .select("retry")
-                .eq("userID", self.user_id)
-                .eq("questionID", self.question_id)
-                .maybe_single()
+            res = supabase_client.table("Answer") \
+                .select("retry") \
+                .eq("userID", self.user_id) \
+                .eq("questionID", self.question_id) \
+                .maybe_single() \
                 .execute()
-            )
-            if response.data:
-                return response.data.get("retry", 0) + 1
-            return 1
+            data = res.data
+            if isinstance(data, str):
+                data = json.loads(data)
+            return data.get("retry", 0) + 1 if data else 0
         except Exception:
-            return 1
+            return 0
 
-    def calculate_time_taken(self):
-        return int((self.completed_at - self.started_at).total_seconds())
+    def load_question_metadata(self):
+        try:
+            res = supabase_client.table("Question") \
+                .select("questionText", "correctAnswer", "constraints", "avgTimeSeconds") \
+                .eq("questionID", self.question_id) \
+                .single() \
+                .execute()
+            q = res.data
+            if isinstance(q, str):
+                q = json.loads(q)
+            self.question_text = q.get("questionText", "")
+            self.correct_answer = q.get("correctAnswer", "")
+            self.constraints = q.get("constraints", "")
+            self.avg_time = q.get("avgTimeSeconds", 90)
+            
+            if isinstance(self.correct_answer, str):
+                try:
+                    self.correct_answer = json.loads(self.correct_answer)
+                except json.JSONDecodeError:
+                    pass
+            if isinstance(self.constraints, str):
+                try:
+                    self.constraints = json.loads(self.constraints)
+                except json.JSONDecodeError:
+                    pass
+        except Exception as e:
+            raise Exception("Failed to load question info: " + str(e))
 
     def validate(self):
-        def parse_response(raw):
-            if isinstance(raw, dict):
-                if "error" in raw:
-                    raise Exception(raw["error"])
-                return raw
-            try:
-                return json.loads(raw)
-            except json.JSONDecodeError as e:
-                raise Exception(f"Invalid JSON from model: {str(e)}")
-
-        #time taken
-        time_taken = self.calculate_time_taken()
-
-        # avg time from DB
-        try:
-            res = supabase_client.table("Question").select("avgTimeSeconds").eq("questionID", self.question_id).single().execute()
-            avg_time = res.data.get("avgTimeSeconds", 90)
-        except Exception:
-            avg_time = 90
-
-        # MCQ & Drag-Drop
         if self.question_type_id in (1, 4):
             self.is_correct = self.user_answer == self.correct_answer
-            if not self.is_correct:
-                self.feedback = "Not quite right"
+            base_score = ScoreCalculator.BASE_POINTS[self.question_type_id]
+            self.points = ScoreCalculator.apply_bonuses(
+                base_score=base_score,
+                is_correct=self.is_correct,
+                retry=self.retry,
+                time_taken=self.time_taken,
+                avg_time=self.avg_time,
+                skill_level=self.skill_level
+            )
+            self.feedback = "Correct!" if self.is_correct else "Incorrect"
+            return
 
-        # Coding
-        elif self.question_type_id == 2:
-            req = {
+        if self.question_type_id == 2:
+            payload = {
                 "questionid": self.question_id,
-                "question": self.correct_answer,
+                "question": self.question_text,
                 "user_answer": self.user_answer,
                 "constraints": self.constraints,
-                "avgTimeSeconds": avg_time,
-                "timeTaken": time_taken
+                "avgTimeSeconds": self.avg_time,
+                "timeTaken": self.time_taken
             }
-            raw_response = Prompt.check_coding(json.dumps(req))
-            response = parse_response(raw_response)
+            raw_response = Prompt.check_coding(json.dumps(payload))
 
-            self.is_correct = response.get("isCorrect", False)
-            self.feedback = response.get("feedback", "")
-            self.hint = response.get("hint", "")
-            self.points = response.get("points") or ScoreCalculator.BASE_POINTS.get(self.question_type_id, 0)
-
-        #fill-in-the-blank
         elif self.question_type_id == 3:
-            req = {
+            parsed_answer = self.correct_answer
+            payload = {
                 "questionid": self.question_id,
                 "user_answer": self.user_answer,
-                "correct_answer": self.correct_answer,
-                "avgTimeSeconds": avg_time,
-                "timeTaken": time_taken
+                "correct_answer": parsed_answer,
+                "avgTimeSeconds": self.avg_time,
+                "timeTaken": self.time_taken
             }
-            raw_response = Prompt.check_fill_in(json.dumps(req))
-            response = parse_response(raw_response)
+            raw_response = Prompt.check_fill_in(json.dumps(payload))
 
-            self.is_correct = response.get("isCorrect", False)
-            self.feedback = response.get("feedback", "")
-            self.hint = response.get("hint", "")
-            self.points = response.get("points") or ScoreCalculator.BASE_POINTS.get(self.question_type_id, 0)
+        else:
+            raise Exception("Unsupported question type")
+        
+        response = json.loads(raw_response) if isinstance(raw_response, str) else raw_response
 
-    def apply_scoring(self):
-        try:
-            res = supabase_client.table("Question").select("avgTimeSeconds").eq("questionID", self.question_id).single().execute()
-            avg_time = res.data.get("avgTimeSeconds", 120)
-        except Exception:
-            avg_time = 120
+        if "error" in response:
+            raise Exception(response["error"])
 
-        time_taken = self.calculate_time_taken()
-
-        #bonus
-        self.points = ScoreCalculator.calculate_points(
-            question_type_id=self.question_type_id,
+        self.is_correct = response.get("isCorrect", False)
+        self.feedback = response.get("feedback", "")
+        self.hint = response.get("hint", "")
+        self.points = ScoreCalculator.apply_bonuses(
+            base_score=int(response.get("points", 0)),
             is_correct=self.is_correct,
             retry=self.retry,
-            time_taken=time_taken,
-            skill_level=self.skill_level,
-            avg_time=avg_time,
-            base_score=self.points if self.points > 0 else None
+            time_taken=self.time_taken,
+            avg_time=self.avg_time,
+            skill_level=self.skill_level
+
         )
-
-    def persist(ans):
-        try:
-            # Convert datetime objects to timestamps for storage
-            started_timestamp = int(ans.started_at.timestamp()) if isinstance(ans.started_at, datetime) else ans.started_at
-            completed_timestamp = int(ans.completed_at.timestamp()) if isinstance(ans.completed_at, datetime) else ans.completed_at
-            
-            # Check if answer already exists
-            existing = (
-                supabase_client.table("Answer")
-                .select("answerID")
-                .eq("userID", ans.user_id)
-                .eq("questionID", ans.question_id)
-                .single()
-                .execute()
-            )
-
-            if existing.data:
-                response = (
-                    supabase_client.table("Answer")
-                    .update({
-                        "userAnswer": ans.user_answer,
-                        "correctAnswer": ans.correct_answer,
-                        "correct": ans.is_correct,
-                        "feedback": ans.feedback,
-                        "hint": ans.hint,
-                        "points": ans.points,
-                        "retry": ans.retry,
-                        "startedAt": started_timestamp,
-                        "completedAt": completed_timestamp
-                    })
-                    .eq("answerID", existing.data["answerID"])
-                    .execute()
-                )
-            else:
-                response = (
-                    supabase_client.table("Answer")
-                    .insert([{
-                        "questionID": ans.question_id,
-                        "userID": ans.user_id,
-                        "userAnswer": ans.user_answer,
-                        "correctAnswer": ans.correct_answer,
-                        "correct": ans.is_correct,
-                        "feedback": ans.feedback,
-                        "hint": ans.hint,
-                        "points": ans.points,
-                        "retry": ans.retry,
-                        "startedAt": started_timestamp,
-                        "completedAt": completed_timestamp
-                    }])
-                    .execute()
-                )
-
-            return {"success": True, "data": response.data}
-        except Exception as e:
-            return {"success": False, "error": str(e), "status": 500}
         
+    def persist(self):
+        try:
+            res = supabase_client.table("Answer") \
+                .select("answerID") \
+                .eq("userID", self.user_id) \
+                .eq("questionID", self.question_id) \
+                .maybe_single() \
+                .execute()
+                
+            existing = res.data
+            if isinstance(existing, str):
+                existing = json.loads(existing)
+
+            payload = {
+                "questionID": self.question_id,
+                "userID": self.user_id,
+                "userAnswer": self.user_answer,
+                "correctAnswer": self.correct_answer,
+                "correct": self.is_correct,
+                "feedback": self.feedback if self.question_type_id in (2, 3) else "",
+                "hint": self.hint if self.question_type_id in (2, 3) else "",
+                "points": self.points,
+                "retry": self.retry,
+                "startedAt": self.start_time,
+                "completedAt": self.end_time
+            }
+            
+            if existing:
+                supabase_client.table("Answer") \
+                    .update(payload) \
+                    .eq("answerID", existing["answerID"]) \
+                    .execute()
+            else:
+                payload["retry"] = 0  # Ensure retry starts at 0
+                supabase_client.table("Answer") \
+                    .insert([payload]) \
+                    .execute()
+
+        except Exception as e:
+            raise Exception("db save failed: " + str(e))
+
+
     @staticmethod
     def submit_answers(user_id, answers_data, skill_level):
+        try:
+            if isinstance(answers_data, str):
+                answers_data = json.loads(answers_data)
+        except json.JSONDecodeError:
+            return {"results": [], "error": "Invalid JSON input"}
+
+        total_points = 0
         results = []
-        
-        for answer_data in answers_data:
+
+        for a in answers_data:
+            # 🔍 SAFELY LOG EACH ENTRY
+            print("🟡 ENTRY TYPE:", type(a))
+            print("🟡 ENTRY VALUE:", a)
+
+            if isinstance(a, str):
+                try:
+                    a = json.loads(a)
+                except Exception as e:
+                    return {"results": [], "error": f"Failed to parse entry: {str(e)}"}
+
             try:
-                answer = Answer(answer_data, user_id, skill_level)
-                answer.validate()
-                answer.apply_scoring()
-                result = answer.persist()
-                
-                if result["success"]:
-                    results.append({
-                        "questionId": answer.question_id,
-                        "success": True,
-                        "isCorrect": answer.is_correct,
-                        "points": answer.points,
-                        "feedback": answer.feedback,
-                        "hint": answer.hint
-                    })
-                else:
-                    results.append({
-                        "questionId": answer.question_id,
-                        "success": False,
-                        "error": result["error"]
-                    })
+                ans = Answer(a, user_id, skill_level)
+                ans.validate()
+                ans.persist()
+                total_points += ans.points
+                results.append({
+                    "questionId": ans.question_id,
+                    "success": True,
+                    "isCorrect": ans.is_correct,
+                    "points": ans.points,
+                    "feedback": ans.feedback,
+                    "hint": ans.hint
+                })
             except Exception as e:
                 results.append({
-                    "questionId": answer_data.get("questionId", "unknown"),
+                    "questionId": a.get("questionId", "unknown") if isinstance(a, dict) else "unknown",
                     "success": False,
                     "error": str(e)
                 })
-                
-        return results
+
+        try:
+            res = supabase_client.table("User") \
+                .select("points") \
+                .eq("userID", user_id) \
+                .single() \
+                .execute()
+            user_data = res.data
+            if isinstance(user_data, str):
+                user_data = json.loads(user_data)
+
+            old_points = user_data.get("points", 0)
+            new_total = old_points + total_points
+            supabase_client.table("User") \
+                .update({"points": new_total}) \
+                .eq("userID", user_id) \
+                .execute()
+        except Exception as e:
+            results.append({"error": "Failed to update user points: " + str(e)})
+
+        return {"results": results}
