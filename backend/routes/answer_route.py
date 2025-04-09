@@ -11,11 +11,16 @@ def submit_answers():
     print("HIT!!!!!!!!!")
     try:
         auth_result = verify_token()
-        if "error" in auth_result:
-            return jsonify(auth_result), 401
 
-        user_id = auth_result
-        user_profile, status = UserService.get_user_profile(user_id)
+        # 🔍 If it returned a tuple, it's an error
+        if isinstance(auth_result, tuple):
+            return jsonify(auth_result[0]), auth_result[1]
+        user_id = auth_result["id"]
+        # 🔐 Now safe to access
+        user = auth_result
+        print(F"NO ISSUE WITH USER ID :{user_id}")
+        user_profile, status = UserService.get_user_profile(user)
+        print(f"no isse with user_profile: {user_profile}")
         if status != 200:
             return jsonify(user_profile), status
 

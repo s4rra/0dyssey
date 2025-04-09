@@ -76,7 +76,7 @@ class UserService:
     def get_user_profile(user):
         try:
             user_id = user["id"]
-
+            print("profile got user id")
             response = (
                 supabase_client
                 .table("User")

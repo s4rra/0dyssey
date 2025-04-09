@@ -39,10 +39,12 @@ class Answer:
         self.question_id = answer_data["questionId"]
         self.question_type_id = answer_data.get("questionTypeId")
         self.user_answer = answer_data.get("userAnswer", "")
-        self.start_time = answer_data.get("startTime")
-        self.end_time = answer_data.get("endTime")
+        self.start_time = datetime.fromtimestamp(answer_data.get("startTime"))
+        self.end_time = datetime.fromtimestamp(answer_data.get("endTime"))
         self.skill_level = skill_level
-        self.time_taken = max(1, int(self.end_time - self.start_time))
+        delta = self.end_time - self.start_time
+        self.time_taken = max(1, int(delta.total_seconds()))
+
 
         self.question_text = ""
         self.correct_answer = ""
@@ -160,6 +162,7 @@ class Answer:
         
     def persist(self):
         try:
+            print(f"📌 Saving answer: qID={self.question_id}, userID={self.user_id}")
             res = supabase_client.table("Answer") \
                 .select("answerID") \
                 .eq("userID", self.user_id) \
@@ -167,34 +170,37 @@ class Answer:
                 .maybe_single() \
                 .execute()
                 
-            existing = res.data
-            if isinstance(existing, str):
-                existing = json.loads(existing)
+            existing = res.data if res and hasattr(res, "data") else None
+            print("/////////")
 
             payload = {
                 "questionID": self.question_id,
                 "userID": self.user_id,
                 "userAnswer": self.user_answer,
                 "correctAnswer": self.correct_answer,
-                "correct": self.is_correct,
+                "is_correct": self.is_correct,
                 "feedback": self.feedback if self.question_type_id in (2, 3) else "",
                 "hint": self.hint if self.question_type_id in (2, 3) else "",
-                "points": self.points,
+                "Points": self.points,
                 "retry": self.retry,
-                "startedAt": self.start_time,
-                "completedAt": self.end_time
+                "startedAt": self.start_time.isoformat(),
+                "completedAt": self.end_time.isoformat()
             }
             
             if existing:
+                print("✅ Row found, will update:", existing)
                 supabase_client.table("Answer") \
-                    .update(payload) \
+                    .update(payload, count="exact") \
                     .eq("answerID", existing["answerID"]) \
                     .execute()
+                print("✅ Answer updated.")
             else:
-                payload["retry"] = 0  # Ensure retry starts at 0
+                print("❌ No existing row — will insert new.")
+                payload["retry"] = 0
                 supabase_client.table("Answer") \
-                    .insert([payload]) \
+                    .insert([payload], count="exact") \
                     .execute()
+                print("✅ Answer inserted.")
 
         except Exception as e:
             raise Exception("db save failed: " + str(e))
@@ -217,8 +223,8 @@ class Answer:
 
         for a in answers_data:
             # 🔍 SAFELY LOG EACH ENTRY
-            print("🔄 Entry in loop type:", type(a))
-            print("🔄 Entry in loop value:", a)
+            print("🔍 Answer Entry Type:", type(a))
+            print("🔍 Answer Entry:", a)
 
             if isinstance(a, str):
                 try:
@@ -229,7 +235,9 @@ class Answer:
             try:
                 ans = Answer(a, user_id, skill_level)
                 ans.validate()
+                print("VALID")
                 ans.persist()
+                print("UPDATED/INSERTED")
                 total_points += ans.points
                 results.append({
                     "questionId": ans.question_id,
@@ -247,19 +255,22 @@ class Answer:
                 })
 
         try:
+            print("📊 Updating User Points:")
             res = supabase_client.table("User") \
                 .select("points") \
                 .eq("userID", user_id) \
                 .single() \
                 .execute()
             user_data = res.data
+            print("DONE")
             if isinstance(user_data, str):
                 user_data = json.loads(user_data)
 
             old_points = user_data.get("points", 0)
             new_total = old_points + total_points
+            print(f"🏁 Total Points: {total_points} → Updating to: {new_total}")
             supabase_client.table("User") \
-                .update({"Points": new_total}) \
+                .update({"points": new_total}) \
                 .eq("userID", user_id) \
                 .execute()
         except Exception as e:
