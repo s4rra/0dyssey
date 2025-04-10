@@ -1,6 +1,6 @@
 import React from 'react';
 
-function QuestionRenderer({ 
+function QuestionRender({ 
   question, 
   index, 
   userAnswers, 
@@ -194,4 +194,4 @@ function QuestionRenderer({
   }
 }
 
-export default QuestionRenderer;
+export default QuestionRender;

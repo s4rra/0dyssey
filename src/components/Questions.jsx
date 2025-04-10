@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import QuestionRenderer from "../QuestionRenderer";
+import QuestionRender from "./QuestionRender";
 import "../css/questions.css";
 
 function Questions() {
@@ -10,6 +10,7 @@ function Questions() {
   const [submissionResults, setSubmissionResults] = useState({});
   const [showHints, setShowHints] = useState({});
   const [loading, setLoading] = useState(true);
+  const [totalPoints, setTotalPoints] = useState(0);
 
   const { subunitId } = useParams();
   const navigate = useNavigate();
@@ -103,6 +104,8 @@ function Questions() {
         return acc;
       }, {});
       setSubmissionResults(resultsMap);
+      const totalPoints = result.results.reduce((sum, r) => sum + (r.points || 0), 0);
+      setTotalPoints(totalPoints);
     } else {
       alert("Error submitting answers");
     }
@@ -115,7 +118,7 @@ function Questions() {
       <h2 className="questions-title">Questions</h2>
       <div className="questions-list">
         {questions.map((question, index) => (
-          <QuestionRenderer
+          <QuestionRender
             key={question.questionID}
             question={question}
             index={index}
@@ -130,11 +133,13 @@ function Questions() {
           />
         ))}
       </div>
+      {Object.keys(submissionResults).length > 0 && (
+        <div className="points-banner">+{totalPoints} points!</div>
+      )}
       <div className="action-buttons">
         {Object.keys(submissionResults).length === 0 && (
           <button
             onClick={submitAnswers}
-            disabled={Object.keys(userAnswers).length !== questions.length}
             className="submit-button"
           >
             Submit

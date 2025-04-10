@@ -326,7 +326,7 @@ class Prompt:
                     types.Part.from_text(text="""Act as an engaging Python instructor. Generate 3 unique drag-and-drop Python questions in a JSON array.
                                         Each question must:
                                         - Be clearly tied to the provided subunit description
-                                        - Include 1 to 3 blanks in the code (use `_____`)
+                                        - Include stricktly 2 to 3 blanks in the code or question to be filled in (use `_____`), or include blanks at the end of the question if the question asks to "Drag the correct blocks into the blanks"
                                         - Be age-appropriate (10–17), fun, and educational
                                         - Include a `question` (context with blanks), `correct_answer` (ordered list), and `options` (correct answers + distractors)
                                         - Follow the JSON schema exactly
@@ -426,6 +426,7 @@ class Prompt:
                             Do NOT praise incorrect answers.
                             
                             based on time taken to solve in seconds compared to avgTimeSeconds , give score out of 10 in points
+                            If no answer is submitted for a question, assume it's incorrect and provide feedback and a hint that explain the correct approach or concept behind the question
                             """),
                             ],
                         )
@@ -516,7 +517,8 @@ class Prompt:
                         
                         based on time taken to solve in seconds compared to avgTimeSeconds , give score out of 7 in points
                         
-                        Your response MUST follow this exact JSON schema"""),
+                        Your response MUST follow this exact JSON schema
+                        If no answer is submitted for a question, assume it's incorrect and provide feedback and a hint that explain the correct approach or concept behind the question"""),
                                 ],
                             )
 
