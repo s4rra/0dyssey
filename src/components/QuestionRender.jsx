@@ -168,11 +168,11 @@ function QuestionRender({
             <strong>Feedback:</strong> {result.feedback}
           </div>
         )}
-        {result.hint && (
+        {result.hint && result.retry >= 3 && (
           <div className="hint-container">
             <button onClick={() => toggleHint(questionId)} className="hint-button">
-              <span className="hint-symbol">?</span>
-              {showHints[questionId] ? 'Hide Hint' : 'Show Hint'}
+              <span className="hint-symbol"></span>
+              {showHints[questionId] ? 'Hide Hint!' : 'Show Hint!'}
             </button>
             {showHints[questionId] && (
               <div className="hint-text">

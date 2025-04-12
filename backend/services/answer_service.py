@@ -184,9 +184,20 @@ class Answer:
                 "Points": self.points,
                 "retry": self.retry,
                 "startedAt": self.start_time.isoformat(),
-                "completedAt": self.end_time.isoformat()
+                "completedAt": self.end_time.isoformat(),
+                "timeTaken": self.time_taken 
             }
-            
+            print("\nANSWER ANALYTICS --------------------------------")
+            print(f"QuestionID    : {self.question_id}")
+            print(f"UserID        : {self.user_id}")
+            print(f"Skill Level   : {self.skill_level}")
+            print(f"Retries       : {self.retry}")
+            print(f"AvgTime       : {self.avg_time} seconds")
+            print(f"Time Taken    : {self.time_taken} seconds")
+            print(f"Is Correct     : {self.is_correct}")
+            print(f"Points Earned : {self.points}")
+            print("----------------------------------------------------\n")
+
             if existing:
                 print("✅ Row found, will update:", existing)
                 supabase_client.table("Answer") \
@@ -245,7 +256,8 @@ class Answer:
                     "isCorrect": ans.is_correct,
                     "points": ans.points,
                     "feedback": ans.feedback,
-                    "hint": ans.hint
+                    "hint": ans.hint,
+                    "retry": ans.retry
                 })
             except Exception as e:
                 results.append({

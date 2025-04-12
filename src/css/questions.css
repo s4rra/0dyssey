@@ -232,10 +232,10 @@
     background-color: #e0e0e0;
   }
   
-  /* Loading State */
   .loading {
-    text-align: center;
-    padding: 40px;
+    margin-top: 10px;
+    font-size: 14px;
     color: #666;
-    font-size: 18px;
+    font-style: italic;
   }
+  

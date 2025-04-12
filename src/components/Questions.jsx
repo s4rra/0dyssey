@@ -78,40 +78,44 @@ function Questions() {
   };
 
   const submitAnswers = async () => {
+    setLoading(true);
     const currentTime = Math.floor(Date.now() / 1000);
-    
-    const answersData = questions.map(q => ({
-      questionId: q.questionID,
-      questionTypeId: q.questionTypeID,
-      userAnswer: userAnswers[q.questionID] || '',
-      startTime: questionStartTimes[q.questionID] || currentTime - 60,
-      endTime: currentTime
-    }));
+      try {
+      const answersData = questions.map(q => ({
+        questionId: q.questionID,
+        questionTypeId: q.questionTypeID,
+        userAnswer: userAnswers[q.questionID] || '',
+        startTime: questionStartTimes[q.questionID] || currentTime - 60,
+        endTime: currentTime
+      }));
 
-    const res = await fetch(SUBMIT_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(answersData)
-    });
+      const res = await fetch(SUBMIT_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(answersData)
+      });
 
-    const result = await res.json();
-    if (result.results) {
-      const resultsMap = result.results.reduce((acc, r) => {
-        acc[r.questionId] = r;
-        return acc;
-      }, {});
-      setSubmissionResults(resultsMap);
-      const totalPoints = result.results.reduce((sum, r) => sum + (r.points || 0), 0);
-      setTotalPoints(totalPoints);
-    } else {
-      alert("Error submitting answers");
+      const result = await res.json();
+      if (result.results) {
+        const resultsMap = result.results.reduce((acc, r) => {
+          acc[r.questionId] = r;
+          return acc;
+        }, {});
+        setSubmissionResults(resultsMap);
+        const totalPoints = result.results.reduce((sum, r) => sum + (r.points || 0), 0);
+        setTotalPoints(totalPoints);
+      } else {
+        alert("Error submitting answers");
+      }
+    } catch (err) {
+      alert("Submission failed");
+    } finally {
+      setLoading(false);
     }
   };
-
-  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <div className="questions-container">
@@ -137,18 +141,20 @@ function Questions() {
         <div className="points-banner">+{totalPoints} points!</div>
       )}
       <div className="action-buttons">
-        {Object.keys(submissionResults).length === 0 && (
-          <button
+        <button
             onClick={submitAnswers}
             className="submit-button"
           >
-            Submit
-          </button>
-        )}
+            {Object.keys(submissionResults).length === 0 ? 'Submit' : 'Resubmit'}
+        </button>
         <button onClick={generateMoreQuestions} className="generate-button">
           More Questions?
         </button>
+        <button className="generate-button">
+          Next
+        </button>
       </div>
+      {loading && <div className="loading">Loading...</div>}
     </div>
   );
 }

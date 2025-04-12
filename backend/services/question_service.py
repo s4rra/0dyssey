@@ -78,14 +78,25 @@ class Questions:
             if skill_level_id not in [1, 2, 3]:
                 return {"error": "Invalid skill level provided"}, 400
 
-            type_limits = {
-                1: 3 if skill_level_id == 1 else 2,  # MCQ
-                3: 3 if skill_level_id == 1 else 2,  # Fill-in
-                4: 2 if skill_level_id == 1 else 3   # Drag-Drop
-            }  
-            if skill_level_id in [2, 3]:
-                type_limits[2] = 1 if skill_level_id == 2 else 4  # Coding
-
+            if skill_level_id == 1:
+                type_limits = {
+                    1: 3,  # MCQ
+                    3: 1,  # Fill-in
+                    4: 1   # Drag-Drop
+                    # No coding
+                }
+            elif skill_level_id == 2:
+                type_limits = {
+                    1: 2,
+                    3: 1,
+                    4: 1,
+                    2: 1  # 1 Coding
+                }
+            elif skill_level_id == 3:
+                type_limits = {
+                    3: 1,  # Fill-in
+                    2: 4  # coding
+                }
             questions = []
             for q_type, limit in type_limits.items():
                 questions.extend(Questions.fetch_questions_by_type(subunit_id, q_type, limit))
@@ -115,7 +126,7 @@ class Questions:
 
             unitDescription = subunit_info.data["RefUnit"]["unitDescription"]
             subUnitDescription = subunit_info.data["subUnitDescription"]
-            prompt = f"generate new questions for: unitDescription:({unitDescription}), subUnitDescription: ({subUnitDescription}), Skill Level: {skill_level} (Beginner=1, Intermediate=2, Advanced=3)"
+            prompt = f"generate new questions for: unitDescription:({unitDescription}), subUnitDescription: ({subUnitDescription}), Skill Level is {skill_level} (Beginner=1, Intermediate=2, Advanced=3)"
             print(prompt)
 
             question_ids = []

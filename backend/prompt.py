@@ -77,8 +77,7 @@ class Prompt:
                     types.Part.from_text(text="""Act as an energetic and engaging teacher creating 3 unique Python multiple-choice questions in a JSON array,
                                          each question must follow the schema exactly. Respond with a JSON array only. Make questions educational, age-appropriate (10–17),
                                          fun, and directly tied to the provided subunit description! Avoid repeating the same question with slight rewording
-                                         Estimated time to solve in seconds ("avgTimeSeconds")
-                                         A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                         A skill level: based on this user input: beginner = never coded, intermediate = some coding knowledge, advanced = knows other programming languages
                                          """),],
             )
 
@@ -157,8 +156,7 @@ class Prompt:
                                          in a JSON array. Follow the schema exactly. Each question must ask the student to write code, not a full program.
                                          Stick to the subunit description content scope ONLY. Keep it educational, age-appropriate (10–17), and fun. 
                                          Avoid repeating the same question with slight rewording!
-                                         Estimated time to solve in seconds ("avgTimeSeconds")
-                                         A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                         A skill level: based on this user input: beginner = never coded, intermediate = some coding knowledge, advanced = knows other programming languages
                                          """),
                 ],
             )
@@ -231,7 +229,7 @@ class Prompt:
                     ),
                 ),
                 system_instruction=[
-                    types.Part.from_text(text="""Act as an energetic and engaging Python teacher creating 3 unique fill-in-the-blank questions in a JSON array.
+                    types.Part.from_text(text="""Act as an energetic and engaging Python teacher creating 2 unique fill-in-the-blank questions in a JSON array.
                                     Each question must:
                                     Be directly based on the given subunit description.
                                     Be age-appropriate (10–17).
@@ -239,8 +237,7 @@ class Prompt:
                                     Include a correct_answer array matching the blanks in order.
                                     Strictly follow the structured schema provided.
                                     Keep the questions clear, relevant, and educational. Avoid repeating concepts or introducing topics outside the subunit’s scope
-                                    Estimated time to solve in seconds ("avgTimeSeconds")
-                                    A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                    A skill level: based on this user input: beginner = never coded, intermediate = some coding knowledge, advanced = knows other programming languages
                                     """),
                         ],
                     )
@@ -323,7 +320,7 @@ class Prompt:
                     ),
                 ),
                 system_instruction=[
-                    types.Part.from_text(text="""Act as an engaging Python instructor. Generate 3 unique drag-and-drop Python questions in a JSON array.
+                    types.Part.from_text(text="""Act as an engaging Python instructor. Generate 2 unique drag-and-drop Python questions in a JSON array.
                                         Each question must:
                                         - Be clearly tied to the provided subunit description
                                         - Include stricktly 2 to 3 blanks in the code or question to be filled in (use `_____`), or include blanks at the end of the question if the question asks to "Drag the correct blocks into the blanks"
@@ -332,8 +329,7 @@ class Prompt:
                                         - Follow the JSON schema exactly
 
                                         Do NOT repeat the same pattern, and don’t go beyond the subunit scope.
-                                        Estimated time to solve in seconds ("avgTimeSeconds")
-                                         A skill level string: "beginner", "intermediate", or "advanced" (based on this user profile: beginner = never coded, intermediate = some coding knowledge, advanced = knows other languages)
+                                        A skill level: based on this user input: beginner = never coded, intermediate = some coding knowledge, advanced = knows other programming languages
                                         """),
                 ],
             )
@@ -417,7 +413,7 @@ class Prompt:
                             hint: Provide a deeper-thinking challenge (e.g. “now, what if the input was a float instead of an integer?”).
                             If the solution is INCORRECT:
                             user answer doesnt apply the "constraints".
-                            feedback: State only what the user current code does (e.g. “thats not quite right, your code does ...”).
+                            feedback: State only what the user current code does (e.g. “thats not quite right, your code does ...”) Socratic-style.
                             hint: Use a Socratic-style question that nudges the student to figure out what went wrong, without revealing the solution (e.g. “How do we usually get input from the user?”).
 
                             NEVER:
@@ -498,7 +494,7 @@ class Prompt:
                         ),
                         "points": genai.types.Schema(
                             type = genai.types.Type.INTEGER,
-                            description = "Score out of 7 based on how well the student's code meets the question's requirements"
+                            description = "Score out of 8 based on how well the student's code meets the question's requirements"
                         ),
                     },
                 ),
@@ -513,7 +509,7 @@ class Prompt:
                         - Use the expected answers (correct_answer) as a guide, not a strict match.
                         - If the student answer is logically correct, mark it as correct (correct!, great work!).
                         - for hints, use a short Socratic-style hint (that encourages thinking without giving the answer).
-                        - Keep all feedback short and focused, (not quite right, your code does...), Do NOT give away the correct answer, do not give tips or suggestions
+                        - Keep all feedback short, Socratic-style and focused, (not quite right, your code does...), Do NOT give away the correct answer, do not give tips or suggestions
                         
                         based on time taken to solve in seconds compared to avgTimeSeconds , give score out of 7 in points
                         
