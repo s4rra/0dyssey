@@ -1,6 +1,6 @@
 import React from 'react';
 
-function QuestionRender({ 
+function QuestionRenderer({ 
   question, 
   index, 
   userAnswers, 
@@ -24,7 +24,6 @@ function QuestionRender({
               value={key}
               checked={userAnswers[q.questionID] === key}
               onChange={() => handleAnswerChange(q.questionID, key)}
-              disabled={!!submissionResults[q.questionID]}
             />
             <span>{value}</span>
           </label>
@@ -51,7 +50,6 @@ function QuestionRender({
                   className="fill-blank-input"
                   value={answers[index] || ""}
                   onChange={e => handleFillBlankChange(q.questionID, index, e.target.value)}
-                  disabled={!!submissionResults[q.questionID]}
                 />
               )}
             </span>
@@ -145,7 +143,6 @@ function QuestionRender({
         rows={4}
         value={userAnswers[q.questionID] || ""}
         onChange={e => handleAnswerChange(q.questionID, e.target.value)}
-        disabled={!!submissionResults[q.questionID]}
       />
       {renderFeedback(q.questionID)}
     </div>
@@ -194,4 +191,4 @@ function QuestionRender({
   }
 }
 
-export default QuestionRender;
+export default QuestionRenderer;

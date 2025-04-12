@@ -438,7 +438,7 @@ class Prompt:
             return response
         except Exception as e:
             return {
-            "error": "Failed to analyze student's coding answer",
+            "error": "Failed to analyze user's coding answer",
             "details": str(e),
             "status": 500
         }
@@ -530,9 +530,80 @@ class Prompt:
         
         except Exception as e:
             return {
-            "error": "Failed to analyze student's fill in the blanks answer",
+            "error": "failed to analyze user's fill in the blanks answer",
             "details": str(e),
             "status": 500
         }
     
-    #check_performance(want to change skill level?)
+    @staticmethod
+    def check_performance(data):
+        try:   
+            client = genai.Client(
+                api_key=os.environ.get("GEMINI_API_KEY"),
+            )
+
+            model = "gemini-2.0-flash"
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_text(text=data),
+                    ],
+                ),
+            ]
+            generate_content_config = types.GenerateContentConfig(
+                temperature=0,
+                top_p=1,
+                top_k=40,
+                max_output_tokens=300,
+                response_mime_type="application/json",
+                response_schema=genai.types.Schema(
+                                type = genai.types.Type.OBJECT,
+                                required = ["levelSuggestion", "aiSummary", "feedbackPrompt"],
+                                properties = {
+                                    "levelSuggestion": genai.types.Schema(
+                                        type = genai.types.Type.INTEGER,
+                                        description = "Recommended skill level (1 = Beginner, 2 = Intermediate, 3 = Advanced)",
+                                    ),
+                                    "aiSummary": genai.types.Schema(
+                                        type = genai.types.Type.STRING,
+                                        description = "Short summary of user performance to be shown on the dashboard",
+                                    ),
+                                    "feedbackPrompt": genai.types.Schema(
+                                        type = genai.types.Type.STRING,
+                                        description = "Message to show the user in a popup when a level change is suggested",
+                                    ),
+                                },
+                            ),
+                system_instruction=[
+                    types.Part.from_text(text="""You are an AI tutor evaluating Python learners' progress.
+                            Based on subunit-level stats, do three things:
+                            1. Write a short summary for dashboard
+                            2. Suggest level change, 
+                            3. Give popup message to user if level change is needed
+                            When evaluating performance:
+                                - Look at correct vs total answers ratio
+                                - Consider time spent vs average time
+                                - Review tag performance to identify strength/weakness areas
+                                - Analyze progress across multiple subunits
+                                - Consider current skill level when making recommendations
+                            """),
+                ],
+            )
+
+            response = ""
+            for chunk in client.models.generate_content_stream(
+                model=model,
+                contents=contents,
+                config=generate_content_config,
+            ): 
+                print(chunk.text, end="")
+                response += chunk.text
+            return response
+        except Exception as e:
+            return {
+            "error": "failed to analyze user's performance",
+            "details": str(e),
+            "status": 500
+        }
+    

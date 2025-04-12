@@ -153,8 +153,8 @@ function Questions() {
         <button className="generate-button">
           Next
         </button>
+        {loading && <div className="loading">Loading...</div>}
       </div>
-      {loading && <div className="loading">Loading...</div>}
     </div>
   );
 }

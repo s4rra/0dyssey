@@ -5,6 +5,7 @@ from routes.question_route import question_bp
 from routes.course_route import course_bp
 from routes.subunit_route import subunit_bp
 from routes.answer_route import answer_bp
+from routes.performance_route import performance_bp
 #starting up flask app, registers routes and enables CORS
 app = Flask(__name__)
 CORS(app)
@@ -15,6 +16,7 @@ app.register_blueprint(question_bp, url_prefix="/api")
 app.register_blueprint(course_bp, url_prefix="/api")
 app.register_blueprint(subunit_bp, url_prefix="/api")
 app.register_blueprint(answer_bp, url_prefix="/api")
+app.register_blueprint(performance_bp, url_prefix="/api") 
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True)

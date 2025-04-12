@@ -8,15 +8,12 @@ answer_bp = Blueprint("answer_bp", __name__)
 
 @answer_bp.route("/submit-answers", methods=["POST"])
 def submit_answers():
-    print("HIT!!!!!!!!!")
     try:
         auth_result = verify_token()
-
-        # 🔍 If it returned a tuple, it's an error
         if isinstance(auth_result, tuple):
             return jsonify(auth_result[0]), auth_result[1]
         user_id = auth_result["id"]
-        # 🔐 Now safe to access
+        
         user = auth_result
         print(F"NO ISSUE WITH USER ID :{user_id}")
         user_profile, status = UserService.get_user_profile(user)
@@ -37,7 +34,6 @@ def submit_answers():
 
         results = Answer.submit_answers(user_id, answers_data, skill_level)
         return jsonify(results), 200
-
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

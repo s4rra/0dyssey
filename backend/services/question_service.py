@@ -161,29 +161,3 @@ class Questions:
 
         except Exception as e:
             return {"error": str(e)}, 500
-
-#testing
-""" if __name__ == "__main__":
-    import json
-
-    # Sample test prompt
-    prompt = "Unit Description: Understanding how Python stores and processes different types of data.SubUnit Description: Introduces variables, naming rules, and assignment in Python."
-    prompt2 = "Unit Description: Using decision-making structures to control program flow. SubUnit Description: Introduces if, elif, and else statements."
-    # Call generate
-    #raw_response = Questions.generate_MCQ(prompt)
-    raw_response = Questions.generate_coding(prompt2)
-
-    # Parse JSON (should be a list of 4 questions)
-    try:
-        questions = json.loads(raw_response)
-        print("\n\n Total Questions Generated:", len(questions))
-        for i, q in enumerate(questions, 1):
-            print(f"\n Question {i}:")
-            print("Q:", q["question"])
-            #print("Options:", q["options"])
-            print("Constraints:", q["constraints"])
-            print("Correct Answer:", q["correct_answer"])
-            print("Tags:", q["tags"])
-    except Exception as e:
-        print("\n failed to parse or print questions:", e)
-        print("Raw Response:", raw_response) """
