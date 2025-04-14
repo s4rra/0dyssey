@@ -390,7 +390,7 @@ class Prompt:
                         ),
                         "feedback": genai.types.Schema(
                             type = genai.types.Type.STRING,
-                            description = "Encouraging, constructive feedback with high-level observations, not suggestions",
+                            description = "Encouraging, constructive feedback, NO suggestions",
                         ),
                         "isCorrect": genai.types.Schema(
                             type = genai.types.Type.BOOLEAN,
@@ -490,7 +490,7 @@ class Prompt:
                         ),
                         "feedback": genai.types.Schema(
                             type = genai.types.Type.STRING,
-                            description = "Constructive comment. Encouraging if correct, helpful if not, no answer suggestions",
+                            description = "Constructive yet encouraging comment, No suggestions",
                         ),
                         "points": genai.types.Schema(
                             type = genai.types.Type.INTEGER,
