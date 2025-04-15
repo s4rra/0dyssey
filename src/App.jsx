@@ -4,6 +4,7 @@ import Profile from "./components/Profile";
 import Courses from "./components/Courses";
 import Missions from "./components/Missions";
 import Shop from "./components/Shop";
+import Bookmarks from "./components/Bookmarks";
 import Settings from "./components/Settings";
 import Page from "./components/Page";
 import Login from "./components/Login";
@@ -22,9 +23,9 @@ function App() {
                 <Route path="/courses" element={<Page><Courses /></Page>}>
                     <Route path="subunit/:subUnitId" element={<SubUnit />} />
                 </Route>
-
                 <Route path="/missions" element={<Page><Missions /></Page>} />
                 <Route path="/shop" element={<Page><Shop /></Page>} />
+                <Route path="/bookmarks" element={<Page><Bookmarks /></Page>} />
                 <Route path="/settings" element={<Page><Settings /></Page>} />
             </Routes>
         </div>
