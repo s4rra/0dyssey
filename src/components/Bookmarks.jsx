@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-// import "../css/bookmarks.css";
+import { useNavigate } from "react-router-dom";
+import "../css/bookmarks.css"; // You'll need to create this CSS file
 
-const BookmarksPage = () => {
+const Bookmarks = () => {
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,60 +11,60 @@ const BookmarksPage = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please log in to view bookmarks.");
       navigate("/login");
       return;
     }
 
-    const fetchBookmarks = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("http://127.0.0.1:8080/api/bookmarks", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        if (!response.ok) {
+    // Fetch user's bookmarks
+    fetch("http://127.0.0.1:8080/api/bookmarks", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) {
           throw new Error("Failed to fetch bookmarks");
         }
-        
-        const data = await response.json();
+        return res.json();
+      })
+      .then((data) => {
         setBookmarks(data.bookmarks || []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
         setLoading(false);
-      }
-    };
-
-    fetchBookmarks();
+      })
+      .catch((error) => {
+        console.error("Error fetching bookmarks:", error);
+        setError("Failed to load bookmarks. Please try again later.");
+        setLoading(false);
+      });
   }, [navigate]);
 
-  const handleRemoveBookmark = async (subUnitId) => {
+  const handleRemoveBookmark = async (subUnitID) => {
     const token = localStorage.getItem("token");
-    if (!token) return;
-
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8080/api/bookmark/${subUnitId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (response.ok) {
-        setBookmarks(bookmarks.filter(bookmark => bookmark.subUnitID !== subUnitId));
+      const response = await fetch(`http://127.0.0.1:8080/api/bookmark/${subUnitID}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to remove bookmark");
       }
+      
+      // Update local state to remove the bookmark
+      setBookmarks(bookmarks.filter(bookmark => bookmark.subUnitID !== subUnitID));
     } catch (error) {
       console.error("Error removing bookmark:", error);
+      alert("Failed to remove bookmark. Please try again.");
     }
+  };
+
+  const navigateToSubunit = (subUnitID) => {
+    navigate(`/courses/subunit/${subUnitID}`);
   };
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
-        <p>Loading your bookmarks...</p>
+        <p>Loading bookmarks...</p>
       </div>
     );
   }
@@ -72,10 +72,10 @@ const BookmarksPage = () => {
   if (error) {
     return (
       <div className="error-container">
-        <h2>Error Loading Bookmarks</h2>
+        <h2>Error</h2>
         <p>{error}</p>
-        <button onClick={() => window.location.reload()} className="retry-button">
-          Try Again
+        <button onClick={() => navigate("/courses")} className="back-button">
+          Back to Courses
         </button>
       </div>
     );
@@ -83,48 +83,41 @@ const BookmarksPage = () => {
 
   return (
     <div className="bookmarks-container">
-      <div className="bookmarks-header">
-        <h1>Your Bookmarked Lessons</h1>
-        <p>{bookmarks.length} {bookmarks.length === 1 ? "bookmark" : "bookmarks"}</p>
-      </div>
-
+      <h1>My Bookmarks</h1>
+      
       {bookmarks.length === 0 ? (
-        <div className="empty-bookmarks">
-          <p>You haven&apos;t bookmarked any lessons yet.</p>
-          <Link to="/courses" className="explore-link">
-            Explore Courses
-          </Link>
+        <div className="no-bookmarks">
+          <p>You don&apos;t have any bookmarks yet.</p>
+          <button onClick={() => navigate("/courses")} className="browse-button">
+            Browse Courses
+          </button>
         </div>
       ) : (
-        <div className="bookmarks-grid">
+        <div className="bookmarks-list">
           {bookmarks.map((bookmark) => (
-            <div key={bookmark.subUnitID} className="bookmark-card">
-              <div className="bookmark-content">
+            <div key={bookmark.bookmarkID} className="bookmark-item">
+              <div className="bookmark-content" onClick={() => navigateToSubunit(bookmark.subUnitID)}>
                 <h3>{bookmark.subUnitName}</h3>
-                {bookmark.subUnitDescription && (
-                  <p className="description">{bookmark.subUnitDescription}</p>
-                )}
-                <div className="bookmark-actions">
-                  <Link
-                    to={`/subunit/${bookmark.subUnitID}`}
-                    className="view-link"
-                  >
-                    View Lesson
-                  </Link>
-                  <button
-                    onClick={() => handleRemoveBookmark(bookmark.subUnitID)}
-                    className="remove-btn"
-                  >
-                    Remove
-                  </button>
-                </div>
               </div>
+              <button
+                className="remove-bookmark-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveBookmark(bookmark.subUnitID);
+                }}
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>
       )}
+      
+      <button onClick={() => navigate("/courses")} className="back-button">
+        Back to Courses
+      </button>
     </div>
   );
 };
 
-export default BookmarksPage;
+export default Bookmarks;
