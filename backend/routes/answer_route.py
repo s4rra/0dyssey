@@ -1,7 +1,7 @@
 import json
 from flask import Blueprint, request, jsonify
-from services.answer_service import *
-from services.user_service import *
+from services.answer_service import Answer
+from services.user_service import UserService
 from utils.auth import verify_token
 
 answer_bp = Blueprint("answer_bp", __name__)
@@ -34,20 +34,6 @@ def submit_answers():
 
         results = Answer.submit_answers(user_id, answers_data, skill_level)
         return jsonify(results), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@answer_bp.route("/hint-used", methods=["POST"])
-def hint_used():
-    try:
-        auth_result = verify_token()
-        if isinstance(auth_result, tuple):
-            return jsonify(auth_result[0]), auth_result[1]
-        user_id = auth_result["id"]
-
-        result = ScoreCalculator.deduct_for_hint(user_id)
-        return jsonify(result), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

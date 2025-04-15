@@ -25,35 +25,7 @@ class ScoreCalculator:
         time_bonus = 4 if time_taken < avg_time else 0
 
         total = base_score + skill_bonus + time_bonus - retry_penalty
-        return max(0,total)
-    
-    @staticmethod
-    def deduct_for_hint(user_id):
-        try:
-            res = supabase_client.table("User") \
-            .select("points") \
-            .eq("userID", user_id) \
-            .single() \
-            .execute()
-
-            current_points = res.data["points"]
-            
-            if current_points < 29:
-                return {
-                    "success": False,
-                    "message": f"Not enough points to use a hint. You have {current_points} points!"
-                }
-
-            new_points = current_points - 30
-
-            supabase_client.table("User") \
-            .update({"points": new_points}) \
-            .eq("userID", user_id) \
-            .execute()
-
-            return {"success": True, "updatedPoints": new_points}
-        except Exception as e:
-            return {"error": str(e)}
+        return max(total)
 
 class Answer:
     def __init__(self, answer_data, user_id, skill_level=None):
@@ -81,7 +53,7 @@ class Answer:
         self.hint = ""
         self.retry = self.get_retry_count()
 
-        self.load_question()
+        self.load_question_metadata()
 
     def get_retry_count(self):
         try:
@@ -98,7 +70,7 @@ class Answer:
         except Exception:
             return 0
 
-    def load_question(self):
+    def load_question_metadata(self):
         try:
             res = supabase_client.table("Question") \
                 .select("questionText", "correctAnswer", "constraints", "avgTimeSeconds") \
@@ -138,6 +110,7 @@ class Answer:
                 avg_time=self.avg_time,
                 skill_level=self.skill_level
             )
+            self.feedback = "Correct!" if self.is_correct else "Incorrect"
             return
 
         if self.question_type_id == 2:
