@@ -25,7 +25,7 @@ class SubunitService:
             return {"error": str(e)}, 500
 
     @staticmethod
-    def add_subunit(data):
+    def add_subunit(data): 
         try:
             new_subunit = {
                 "subUnitName": data.get("subUnitName"),

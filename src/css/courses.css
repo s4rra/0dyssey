@@ -1,0 +1,124 @@
+.courses-container {
+    font-family: 'Arial', sans-serif;
+    background: #f8f9fa;
+    margin: 20px auto; /* Center horizontally */
+    padding: 20px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center content inside */
+    width: 90%; /* Adjust width for responsiveness */
+    max-width: 1200px; /* Prevent it from being too wide */
+    flex: 1;
+}
+
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px; /* Increased gap for better spacing */
+    width: 100%;
+    max-width: 1200px;
+    margin-top: 20px;
+}
+
+.course-card {
+    background: #ffffff;
+    padding: 25px; /* Increased padding for better spacing */
+    border-radius: 12px; /* Softer rounded corners */
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    border: 1px solid #e0e0e0; /* Lighter border */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    text-align: left;
+    position: relative;
+    overflow: hidden; /* For hover effects */
+}
+
+.course-card:hover {
+    transform: translateY(-5px); /* Slightly larger hover effect */
+    box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15); /* Deeper shadow on hover */
+}
+
+.course-category {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #1e293b, #334155); /* Gradient background */
+    color: white;
+    padding: 6px 12px; /* Slightly larger padding */
+    border-radius: 20px; /* Pill-shaped */
+    display: inline-block;
+    margin-bottom: 15px; /* Increased margin */
+}
+
+.courses-title {
+    text-align: left; /* Aligns text to the left */
+    width: 100%; /* Ensures it spans full width of the container */
+    font-size: 36px; /* Adjust size as needed */
+    font-weight: bold;
+    color: #1e293b;
+    margin-bottom: 15px; /* Space below title */
+}
+
+.course-description {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6; /* Improved line height for readability */
+    margin-bottom: 20px; /* Increased margin */
+}
+
+.subunits-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-start;
+    margin-top: 15px; /* Increased margin */
+}
+
+.subunits-container button {
+    background: none;
+    border: 1px solid #4caf50;
+    color: #4caf50;
+    padding: 8px 16px; /* Slightly larger padding */
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 20px; /* Pill-shaped buttons */
+    cursor: pointer;
+    transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.subunits-container button:hover {
+    background: #4caf50;
+    color: white;
+}
+
+.start-button {
+    background: linear-gradient(90deg, #4caf50, #66bb6a); /* Gradient background */
+    border: none;
+    color: white;
+    padding: 12px 20px; /* Larger padding */
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 20px; /* Pill-shaped */
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    margin-top: 20px; /* Increased margin */
+    width: 100%;
+    text-align: center;
+}
+
+.start-button:hover {
+    transform: translateY(-2px); /* Slight hover effect */
+    box-shadow: 0px 4px 12px rgba(76, 175, 80, 0.3); /* Shadow on hover */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .courses-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+
+    .course-card {
+        padding: 20px; /* Slightly reduced padding for smaller screens */
+    }
+}
