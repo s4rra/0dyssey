@@ -9,6 +9,7 @@ class PerformanceService:
     
     def update_performance(self, unit_id, subunit_id, answers):
         try:
+            # Process metrics from answers
             total_questions = len(answers)
             correct_answers = 0
             total_time_taken = 0
@@ -65,22 +66,21 @@ class PerformanceService:
             print(f"Error updating performance: {str(e)}")
             return {"success": False, "error": str(e)}
     
-    def get_performance(self, subunit_id):
+    def get_performance_history(self, subunit_id, limit=5):
         try:
             result = supabase_client.table("Performance") \
                 .select("*") \
                 .eq("userID", self.user_id) \
                 .eq("subUnitID", subunit_id) \
                 .order("updatedAt", desc=True) \
-                .limit(1) \
-                .maybe_single() \
+                .limit(limit) \
                 .execute()
                 
-            return result.data if result.data else None
+            return result.data if result.data else []
             
         except Exception as e:
-            print(f"Error getting latest performance: {str(e)}")
-            return None
+            print(f"Error getting performance history: {str(e)}")
+            return []
     
     def get_performance_for_unit(self, unit_id):
         try:
@@ -95,22 +95,37 @@ class PerformanceService:
             latest_performances = []
             for subunit in subunits.data:
                 subunit_id = subunit.get("subUnitID")
-                performance = self.get_performance(subunit_id)
-                
-                if performance:
-                    performance["subUnitDescription"] = subunit.get("subUnitDescription", "")
-                    latest_performances.append(performance)
-            
+                performance_list = self.get_performance_history(subunit_id)
+                if performance_list:
+                    latest = performance_list[0] 
+                    latest["subUnitDescription"] = subunit.get("subUnitDescription", "")
+                    latest_performances.append(latest)
+                        
             return latest_performances
             
         except Exception as e:
             print(f"Error getting unit performance: {str(e)}")
             return []
+
+    def update_skill_level(self, new_level):
+        try:
+            result = supabase_client.table("User") \
+                .update({"chosenSkillLevel": new_level}) \
+                .eq("userID", self.user_id) \
+                .execute()
+            if not result.data:
+                 return {"success": False, "error": "Skill level update failed"}
+                
+            return {"success": True, "newLevel": new_level}
+            
+        except Exception as e:
+            print(f"Error updating skill level: {str(e)}")
+            return {"success": False, "error": str(e)}
     
-    def model_feedback(self, unit_id):
+    def model_feedback(self, unit_id, skill_level):
         try:
             unit_info = supabase_client.table("RefUnit") \
-                .select("unitDescription, skillLevelID") \
+                .select("unitDescription") \
                 .eq("unitID", unit_id) \
                 .single() \
                 .execute()
@@ -119,8 +134,6 @@ class PerformanceService:
                 return {"success": False, "error": "Unit not found"}
                 
             unit_description = unit_info.data.get("unitDescription", "")
-            current_skill_level = unit_info.data.get("skillLevelID", 1)
-            
             performance_data = self.get_performance_for_unit(unit_id)
             
             if not performance_data:
@@ -128,16 +141,16 @@ class PerformanceService:
                 
             prompt_data = {
                 "unitDescription": unit_description,
-                "currentSkillLevel": current_skill_level,
-                "subunitPerformance": performance_data,
-                "userId": self.user_id
+                "currentSkillLevel": skill_level,
+                "subunitPerformance": performance_data
             }
             
-            ai_feedback = Prompt.check_performance(json.dumps(prompt_data)) 
+            ai_feedback = Prompt.check_performance(json.dumps(prompt_data))
+            ai_feedback = json.loads(ai_feedback) 
             
             if not ai_feedback or "error" in ai_feedback:
                 return {"success": False, "error": "Failed to generate AI feedback"}
-                
+            
             for performance in performance_data:
                 performance_id = performance.get("performanceID")
                 if performance_id:
@@ -159,36 +172,5 @@ class PerformanceService:
             print(f"Error generating AI feedback: {str(e)}")
             return {"success": False, "error": str(e)}
     
-    def get_summary(self):
-        try:
-            distinct_subunits = supabase_client.rpc('get_distinct_subunits', {
-                'user_id': self.user_id
-            }).execute()
-            
-            if not distinct_subunits.data:
-                return []
-                
-            dashboard_items = []
-            for subunit_record in distinct_subunits.data:
-                subunit_id = subunit_record.get("subUnitID")
-                if subunit_id:
-                    performance = self.get_performance(subunit_id)
-                    if performance:
-                        subunit_info = supabase_client.table("RefSubUnit") \
-                            .select("subUnitDescription, RefUnit(unitDescription, unitID)") \
-                            .eq("subUnitID", subunit_id) \
-                            .single() \
-                            .execute()
-                            
-                        if subunit_info.data:
-                            performance["subUnitDescription"] = subunit_info.data.get("subUnitDescription", "")
-                            performance["unitDescription"] = subunit_info.data.get("RefUnit", {}).get("unitDescription", "")
-                            performance["unitID"] = subunit_info.data.get("RefUnit", {}).get("unitID")
-                            
-                            dashboard_items.append(performance)
-            
-            return dashboard_items
-            
-        except Exception as e:
-            print(f"Error getting dashboard summary: {str(e)}")
-            return []
+    ########
+ 
