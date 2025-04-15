@@ -20,7 +20,7 @@ const Login = () => {
 
       localStorage.setItem("token", data.access_token);
       alert("Login successful!");
-      navigate("/courses");
+      navigate("/Dashboard");
     } catch (error) {
       alert(error.message);
     }
