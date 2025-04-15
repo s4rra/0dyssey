@@ -11,8 +11,6 @@ function Questions() {
   const [showHints, setShowHints] = useState({});
   const [loading, setLoading] = useState(true);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [hintLoading, setHintLoading] = useState(false);
-  const [notification, setNotification] = useState(null);
 
   const { subunitId } = useParams();
   const navigate = useNavigate();
@@ -20,7 +18,6 @@ function Questions() {
   const API_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/questions`;
   const SUBMIT_URL = `http://127.0.0.1:8080/api/submit-answers`;
   const GENERATE_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/generate-questions`;
-  const HINT_USED_URL = `http://127.0.0.1:8080/api/hint-used`;
 
   useEffect(() => {
     if (!token) {
@@ -65,39 +62,8 @@ function Questions() {
     setUserAnswers(prev => ({ ...prev, [questionId]: current }));
   };
 
-  const toggleHint = async (questionId) => {
-    if (showHints[questionId]) {
-      setShowHints(prev => ({ ...prev, [questionId]: false }));
-      return;
-    }
-    setHintLoading(true);
-    try {
-      const res = await fetch(HINT_USED_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-      const result = await res.json();
-    
-      if (result.success) {
-        setShowHints(prev => ({ ...prev, [questionId]: true }));
-        showNotification(`-30 points for using hint. remaining: ${result.updatedPoints} points`);
-      } else {
-        showNotification(result.message || "Cannot use hint at this time");
-      }
-    } catch (error) {
-      console.error("Error using hint:", error);
-      alert("Error processing hint request");
-    } finally {
-      setHintLoading(false);
-    }
-  }
-
-  const showNotification = (message) => {
-      setNotification(message);
-      setTimeout(() => setNotification(null), 3000);
+  const toggleHint = (questionId) => {
+    setShowHints(prev => ({ ...prev, [questionId]: !prev[questionId] }));
   };
 
   const generateMoreQuestions = async () => {
@@ -166,14 +132,13 @@ function Questions() {
             submissionResults={submissionResults}
             toggleHint={toggleHint}
             showHints={showHints}
-            hintLoading={hintLoading}
             questionStartTimes={questionStartTimes}
             setQuestionStartTimes={setQuestionStartTimes}
           />
         ))}
       </div>
       {Object.keys(submissionResults).length > 0 && (
-        <div className="points-notification">+{totalPoints} points!</div>
+        <div className="points-banner">+{totalPoints} points!</div>
       )}
       <div className="action-buttons">
         <button
@@ -189,11 +154,6 @@ function Questions() {
           Next
         </button>
         {loading && <div className="loading">Loading...</div>}
-        {notification && (
-            <div className="points-notification">
-              {notification}
-            </div>
-          )}
       </div>
     </div>
   );
