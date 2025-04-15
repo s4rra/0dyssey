@@ -25,3 +25,5 @@ dist-ssr
 # Ignore environment variables
 .env.local
 .env.*
+
+__pycache__/

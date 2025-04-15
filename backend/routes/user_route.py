@@ -33,3 +33,18 @@ def get_user_profile():
     user = auth_result
     result, status_code = UserService.get_user_profile(user)
     return jsonify(result), status_code
+@user_bp.route("/profile-pictures", methods=["GET"])
+def get_profile_pictures():
+    result, status_code = UserService.get_profile_pictures()
+    return jsonify(result), status_code
+
+@user_bp.route("/update-profile-picture", methods=["POST"])
+def update_profile_picture():
+    auth_result = verify_token()
+    if isinstance(auth_result, tuple):
+        return jsonify(auth_result[0]), auth_result[1]
+    
+    user = auth_result
+    data = request.json
+    result, status_code = UserService.update_profile_picture(user["id"], data.get("pictureID"))
+    return jsonify(result), status_code

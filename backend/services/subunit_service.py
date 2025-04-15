@@ -5,7 +5,12 @@ class SubunitService:
     @staticmethod
     def get_subunit_content(subunit_id):
         try:
-            response = supabase_client.from_("RefSubUnit").select("subUnitID, subUnitName, subUnitContent").eq("subUnitID", subunit_id).execute()
+            response = (
+                supabase_client.from_("RefSubUnit")
+                .select("subUnitID, subUnitName, subUnitContent")
+                .eq("subUnitID", subunit_id)
+                .execute()
+            )
             
             if not response.data:
                 return {"error": "Subunit not found"}, 404
@@ -40,3 +45,5 @@ class SubunitService:
         
         except Exception as e:
             return {"error": str(e)}, 500
+    
+   
