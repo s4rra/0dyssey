@@ -34,7 +34,6 @@ function Courses() {
   return (
     <div className="courses-container">
       <h2 className="courses-title">Courses</h2>
-
       {/* If a subunit is selected, show it inside the page */}
       {subUnitId ? (
         <Outlet />

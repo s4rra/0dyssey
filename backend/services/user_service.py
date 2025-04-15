@@ -58,7 +58,7 @@ class UserService:
 
             # Password check
             if not check_password_hash(user["Password"], password):
-                return {"error": "Invalid email or password"}, 401
+                return {"error": "Invalid password"}, 401
 
             # Streak calculation
             current_date = datetime.now(timezone.utc).date()
@@ -114,11 +114,10 @@ class UserService:
             if not response.data:
                 return {"error": "User not found"}, 404
 
-            return response.data[0], 200
+            return response.data, 200  #no need for [0] after .single()
 
         except Exception as e:
             return {"error": str(e)}, 500
-
     @staticmethod
     def get_profile_pictures():
         try:
@@ -142,3 +141,4 @@ class UserService:
         except Exception as e:
             print(f"Error updating profile picture: {e}")
             return {"error": str(e)}, 500
+
