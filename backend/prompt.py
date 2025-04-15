@@ -390,11 +390,11 @@ class Prompt:
                         ),
                         "feedback": genai.types.Schema(
                             type = genai.types.Type.STRING,
-                            description = "Encouraging, constructive feedback with high-level observations, not suggestions",
+                            description = "Encouraging, constructive feedback, NO suggestions",
                         ),
                         "isCorrect": genai.types.Schema(
                             type = genai.types.Type.BOOLEAN,
-                            description = "True if the user's answer logically solves the question as written. False otherwise",
+                            description = "True if the user's answer logically solves the question as written. False otherwise, user’s answers is actually correct and logical to question needs",
                         ),
                         "points": genai.types.Schema(
                             type = genai.types.Type.NUMBER,
@@ -413,7 +413,8 @@ class Prompt:
                             hint: Provide a deeper-thinking challenge (e.g. “now, what if the input was a float instead of an integer?”).
                             If the solution is INCORRECT:
                             user answer doesnt apply the "constraints".
-                            feedback: State only what the user current code does (e.g. “thats not quite right, your code does ...”) Socratic-style.
+                            user answer doesnt ful fill the question text or needs.
+                            feedback: State only what the user current code does (e.g. “thats not quite right, your code does ...”) Socratic-style, no.
                             hint: Use a Socratic-style question that nudges the student to figure out what went wrong, without revealing the solution (e.g. “How do we usually get input from the user?”).
 
                             NEVER:
@@ -482,7 +483,7 @@ class Prompt:
                         ),
                         "isCorrect": genai.types.Schema(
                             type = genai.types.Type.BOOLEAN,
-                            description = "True if the user’s answers are correct and logical",
+                            description = "True if the user’s answers is actually correct and logical to question needs",
                         ),
                         "hint": genai.types.Schema(
                             type = genai.types.Type.STRING,
@@ -490,7 +491,7 @@ class Prompt:
                         ),
                         "feedback": genai.types.Schema(
                             type = genai.types.Type.STRING,
-                            description = "Constructive comment. Encouraging if correct, helpful if not, no answer suggestions",
+                            description = "Constructive yet encouraging comment, No suggestions",
                         ),
                         "points": genai.types.Schema(
                             type = genai.types.Type.INTEGER,
@@ -508,6 +509,7 @@ class Prompt:
                         - Accept alternate correct phrasing or synonyms if they make sense.
                         - Use the expected answers (correct_answer) as a guide, not a strict match.
                         - If the student answer is logically correct, mark it as correct (correct!, great work!).
+                        - user answer is incorrect doesnt full fill the question text or needs.
                         - for hints, use a short Socratic-style hint (that encourages thinking without giving the answer).
                         - Keep all feedback short, Socratic-style and focused, (not quite right, your code does...), Do NOT give away the correct answer, do not give tips or suggestions
                         
@@ -579,8 +581,9 @@ class Prompt:
                     types.Part.from_text(text="""You are an AI tutor evaluating Python learners' progress.
                             Based on subunit-level stats, do three things:
                             1. Write a short summary for dashboard
-                            2. Suggest level change, 
+                            2. Suggest level change
                             3. Give popup message to user if level change is needed
+                            
                             When evaluating performance:
                                 - Look at correct vs total answers ratio
                                 - Consider time spent vs average time

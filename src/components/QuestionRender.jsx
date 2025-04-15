@@ -11,6 +11,7 @@ function QuestionRenderer({
   showHints,
   questionStartTimes,
   setQuestionStartTimes,
+  hintLoading,
 }) {
   const renderMCQ = (q, i) => (
     <div key={q.questionID} className="question-container">
@@ -167,9 +168,13 @@ function QuestionRenderer({
         )}
         {result.hint && result.retry >= 3 && (
           <div className="hint-container">
-            <button onClick={() => toggleHint(questionId)} className="hint-button">
+            <button 
+              onClick={() => toggleHint(questionId)} 
+              className="hint-button"
+              disabled={hintLoading}
+            >
               <span className="hint-symbol"></span>
-              {showHints[questionId] ? 'Hide Hint!' : 'Show Hint!'}
+              {hintLoading ? 'Loading...' : showHints[questionId] ? 'Hide Hint!' : 'Show Hint!'}
             </button>
             {showHints[questionId] && (
               <div className="hint-text">

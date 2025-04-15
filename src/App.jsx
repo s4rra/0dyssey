@@ -27,6 +27,8 @@ function App() {
                 <Route path="/shop" element={<Page><Shop /></Page>} />
                 <Route path="/bookmarks" element={<Page><Bookmarks /></Page>} />
                 <Route path="/settings" element={<Page><Settings /></Page>} />
+                <Route path="/subunit/:subunitId/questions" element={<Page><Questions /></Page>} />
+
             </Routes>
         </div>
     );
