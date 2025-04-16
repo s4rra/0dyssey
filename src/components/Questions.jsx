@@ -174,13 +174,15 @@ function Questions() {
       });
   
       const perfResult = await res.json();
+  
       if (!perfResult.success) {
-        console.warn("Performance submission failed:", perfResult.error);
+        console.warn("Performance submission failed. Full response:", perfResult);
       }
     } catch (err) {
-      console.error("submitPerformance failed:", err);
+      console.error("submitPerformance failed with exception:", err);
     }
   };
+  
     
   return (
     <div className="questions-container">

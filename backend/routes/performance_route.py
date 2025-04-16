@@ -25,6 +25,7 @@ def submit_performance(unit_id, subunit_id):
             return jsonify({"error": result.get("error", "Failed to update performance")}), 500
 
         return jsonify({
+            "success": True,
             "message": "Performance updated successfully",
             "performanceID": result.get("performanceID")
         }), 200
