@@ -104,17 +104,36 @@ class UserService:
     def get_user_profile(user):
         try:
             user_id = user["id"]
-            print("get_user_profile() received user:", user)
-            # Fetch user data with profile picture join
-            response = supabase_client.from_("User") \
-                .select("*, ProfilePictures!inner(pictureID, imagePath, displayName),RefUnit(unitDescription), RefSubUnit(subUnitDescription) ") \
-                .eq("userID", user_id) \
-                .execute()
+            print("profile got user id")
 
-            if not response.data:
+            # get user + RefUnit + RefSubUnit
+            response1 = (
+                supabase_client
+                .table("User")
+                .select("*, RefUnit(unitDescription), RefSubUnit(subUnitDescription)")
+                .eq("userID", user_id)
+                .single()
+                .execute()
+            )
+
+            # get ProfilePictures
+            response2 = (
+                supabase_client
+                .from_("User")
+                .select("ProfilePictures!inner(pictureID, imagePath, displayName)")
+                .eq("userID", user_id)
+                .single()
+                .execute()
+            )
+
+            if not response1.data:
                 return {"error": "User not found"}, 404
 
-            return response.data, 200  #no need for [0] after .single()
+            # Merge second call into the first
+            user_data = response1.data
+            user_data["ProfilePictures"] = response2.data.get("ProfilePictures") if response2.data else None
+
+            return user_data, 200
 
         except Exception as e:
             return {"error": str(e)}, 500

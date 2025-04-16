@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "../css/subunit.css";
 
 const SubUnit = () => {
-  const { subUnitId } = useParams();
+  const { unitId, subUnitId } = useParams();
   const [subUnitContent, setSubUnitContent] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
@@ -96,26 +96,26 @@ const SubUnit = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading lesson content...</p>
-      </div>
-    );
-  }
+    if (loading) {
+      return (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading lesson content...</p>
+        </div>
+      );
+    }
 
-  if (!subUnitContent) {
-    return (
-      <div className="error-container">
-        <h2>Content Not Found</h2>
-        <p>We couldn&apos;t find the lesson you&apos;re looking for.</p>
-        <button onClick={handleBackClick} className="back-button">
-          Back to Courses
-        </button>
-      </div>
-    );
-  }
+    if (!subUnitContent) {
+      return (
+        <div className="error-container">
+          <h2>Content Not Found</h2>
+          <p>We couldn&apos;t find the lesson you&apos;re looking for.</p>
+          <button onClick={handleBackClick} className="back-button">
+            Back to Courses
+          </button>
+        </div>
+      );
+    }
 
   const {
     subUnitName,
@@ -190,7 +190,10 @@ const SubUnit = () => {
       </div>
 
       <div className="lesson-footer">
-        <button className="quiz-button">Take Quiz on {subUnitName}</button>
+        <button className="quiz-button"
+        onClick={() => navigate(`/courses/questions/${unitId}/${subUnitId}`)}
+        >
+          Take Quiz on {subUnitName}</button>
       </div>
     </div>
   );

@@ -48,7 +48,7 @@ function Page({ children }) {
                 className={({ isActive }) => (isActive ? "active" : "")}
               >
                 <FiBook className="sidebar-icon" />
-                <span className="sidebar-text">Courses</span>
+                <span className="sidebar-text">Lessons</span>
               </NavLink>
             </li>
             <li className="sidebar-item">

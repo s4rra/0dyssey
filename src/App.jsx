@@ -22,13 +22,13 @@ function App() {
                 <Route path="/dashboard" element={<Page><Dashboard /></Page>} />
                 <Route path="/profile" element={<Page><Profile /></Page>} />
                 <Route path="/courses" element={<Page><Courses /></Page>}>
-                    <Route path="subunit/:subUnitId" element={<SubUnit />} />
+                    <Route path="subunit/:unitId/:subUnitId" element={<SubUnit />} />
+                    <Route path="questions/:unitId/:subunitId" element={<Questions/>} />
                 </Route>
                 <Route path="/missions" element={<Page><Missions /></Page>} />
                 <Route path="/shop" element={<Page><Shop /></Page>} />
                 <Route path="/bookmarks" element={<Page><Bookmarks /></Page>} />
                 <Route path="/settings" element={<Page><Settings /></Page>} />
-                <Route path="/questions/:unitId/:subunitId" element={<Page><Questions /></Page>} />
             </Routes>
         </div>
     );

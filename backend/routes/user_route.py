@@ -33,10 +33,12 @@ def get_user_profile():
     user = auth_result
     result, status_code = UserService.get_user_profile(user)
     return jsonify(result), status_code
+
 @user_bp.route("/profile-pictures", methods=["GET"])
 def get_profile_pictures():
     result, status_code = UserService.get_profile_pictures()
     return jsonify(result), status_code
+
 
 @user_bp.route("/update-profile-picture", methods=["POST"])
 def update_profile_picture():

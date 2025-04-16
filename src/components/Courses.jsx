@@ -33,35 +33,38 @@ function Courses() {
 
   return (
     <div className="courses-container">
-      <h2 className="courses-title">Courses</h2>
+      <Outlet />
+      {location.pathname === "/courses" && (
+        <>
+          <h2 className="courses-title">Lessons</h2>
+          <div className="courses-grid">
+            {courses.map((course) => (
+              <div key={course.unitID} className="course-card">
+                <span className="course-category">Skill Path</span>
+                <h3 className="course-title">{course.unitName}</h3>
+                <p className="course-description">{course.unitDescription}</p>
 
-      {/* If a subunit is selected, show it inside the page */}
-      {subUnitId ? (
-        <Outlet />
-      ) : (
-        <div className="courses-grid">
-          {courses.map((course) => (
-            <div key={course.unitID} className="course-card">
-              <span className="course-category">Skill Path</span>
-              <h3 className="course-title">{course.unitName}</h3>
-              <p className="course-description">{course.unitDescription}</p>
-
-              {course.RefSubUnit && course.RefSubUnit.length > 0 && (
-                <div className="subunits-container">
-                  {course.RefSubUnit.map((subUnit) => (
-                    <button
-                      key={subUnit.subUnitID}
-                      onClick={() => navigate(`/courses/subunit/${subUnit.subUnitID}`)}
-                      className="subunit-button"
-                    >
-                      {subUnit.subUnitName}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                {course.RefSubUnit?.length > 0 && (
+                  <div className="subunits-container">
+                    {course.RefSubUnit.map((subUnit) => (
+                      <button
+                        key={subUnit.subUnitID}
+                        onClick={() =>
+                          navigate(
+                            `/courses/subunit/${course.unitID}/${subUnit.subUnitID}`
+                          )
+                        }
+                        className="subunit-button"
+                      >
+                        {subUnit.subUnitName}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
