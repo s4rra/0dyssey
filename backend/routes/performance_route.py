@@ -105,3 +105,34 @@ def analyze_unit_performance(unit_id):
         return jsonify({"error": str(e)}), 500
     
 #############
+@performance_bp.route("/performance/tags", methods=["GET"])
+def get_tag_performance():
+    try:
+        user = verify_token()
+        if isinstance(user, tuple):
+            return jsonify(user[0]), user[1]
+
+        user_id = user["id"]
+        service = PerformanceService(user_id)
+        tag_performance = service.get_tag_performance()
+
+        return jsonify(tag_performance), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@performance_bp.route("/performance/dashboard", methods=["GET"])
+def get_dashboard_summary():
+    try:
+        user = verify_token()
+        if isinstance(user, tuple):
+            return jsonify(user[0]), user[1]
+
+        user_id = user["id"]
+        service = PerformanceService(user_id)
+        dashboard_data = service.get_summary()
+
+        return jsonify(dashboard_data), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

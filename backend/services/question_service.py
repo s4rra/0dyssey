@@ -2,31 +2,8 @@ import json
 from prompt import *
 from config.settings import supabase_client
 from services.user_service import *
-
+#service class
 class Questions:
-    def __init__(self,
-                    question_type_id: int,
-                    lesson_id: int,
-                    correct_answer: str,
-                    question_text: str,
-                    options: dict,
-                    tags: list,
-                    constraints: str,
-                    generated: bool,
-                    skilllevel: int,
-                    avgTimeSeconds: int):
-            
-            self.question_type_id = question_type_id
-            self.lesson_id = lesson_id
-            self.correct_answer = correct_answer
-            self.question_text = question_text
-            self.options = options
-            self.tags = tags
-            self.constraints = constraints
-            self.generated = generated
-            self.skilllevel = skilllevel
-            self.avgTimeSeconds = avgTimeSeconds
-
     @staticmethod
     def fetch_questions_by_type(subunit_id, question_type_id, limit):
         try:
@@ -45,25 +22,13 @@ class Questions:
         except Exception as e:
             print(f"Error fetching questions type {question_type_id}:", e)
             return []
-
-    def persist(question): 
+    
+    @staticmethod
+    def persist(question_data): 
         try:
             response = (
                 supabase_client.table("Question")
-                .insert([
-                    {   
-                        "questionTypeID": question.question_type_id,
-                        "lessonID": question.lesson_id,
-                        "correctAnswer": question.correct_answer,
-                        "questionText": question.question_text,
-                        "options": question.options,
-                        "tags": question.tags,
-                        "constraints": question.constraints,
-                        "generated": True,
-                        "skilllevel": question.skilllevel,
-                        "avgTimeSeconds": question.avgTimeSeconds
-                    }
-                ])
+                .insert([question_data])
                 .execute()
             )
             print(response.data)
@@ -80,22 +45,21 @@ class Questions:
 
             if skill_level_id == 1:
                 type_limits = {
-                    1: 3,  # MCQ
-                    3: 1,  # Fill-in
-                    4: 1   # Drag-Drop
-                    # No coding
+                    1: 3,
+                    3: 1,
+                    4: 1
                 }
             elif skill_level_id == 2:
                 type_limits = {
                     1: 2,
                     3: 1,
                     4: 1,
-                    2: 1  # 1 Coding
+                    2: 1
                 }
             elif skill_level_id == 3:
                 type_limits = {
-                    3: 1,  # Fill-in
-                    2: 4  # coding
+                    3: 1,
+                    2: 4
                 }
             questions = []
             for q_type, limit in type_limits.items():
@@ -109,16 +73,16 @@ class Questions:
         except Exception as e:
             return {"error": str(e)}, 500
 
+    @staticmethod
     def generate_questions(subunit_id, user):
         try:
             skill_level = user["chosenSkillLevel"]
-            
             subunit_info = (
-            supabase_client.table("RefSubUnit")
-                    .select("subUnitDescription, RefUnit(unitDescription)")
-                    .eq("subUnitID", subunit_id)
-                    .single()
-                    .execute()
+                supabase_client.table("RefSubUnit")
+                .select("subUnitDescription, RefUnit(unitDescription)")
+                .eq("subUnitID", subunit_id)
+                .single()
+                .execute()
             )
 
             if not subunit_info.data:
@@ -133,25 +97,23 @@ class Questions:
 
             def process_questions(data, question_type_id):
                 for q in data:
-                    avg_time = q.get("avgTimeSeconds", 120)
-                    question = Questions(
-                        question_type_id=question_type_id,
-                        lesson_id=subunit_id,
-                        question_text=q["question"],
-                        correct_answer=q["correct_answer"],
-                        options=q.get("options", {}),
-                        constraints=q.get("constraints", ""),
-                        tags=q.get("tags", []),
-                        generated=True,
-                        skilllevel=skill_level,
-                        avgTimeSeconds=avg_time
-                    )
-                    res = Questions.persist(question)
+                    question_data = {
+                        "questionTypeID": question_type_id,
+                        "lessonID": subunit_id,
+                        "questionText": q["question"],
+                        "correctAnswer": q["correct_answer"],
+                        "options": q.get("options", {}),
+                        "constraints": q.get("constraints", ""),
+                        "tags": q.get("tags", []),
+                        "generated": True,
+                        "skilllevel": skill_level,
+                        "avgTimeSeconds": q.get("avgTimeSeconds", 120)
+                    }
+                    res = Questions.persist(question_data)
                     if not res["success"]:
                         raise Exception(res.get("error", "tests error"))
                     question_ids.append(res["data"][0]["questionID"])
 
-            # Generate and persist the questions for each type
             process_questions(json.loads(Prompt.generate_MCQ(prompt)), 1)
             process_questions(json.loads(Prompt.generate_coding(prompt)), 2)
             process_questions(json.loads(Prompt.generate_fill_in(prompt)), 3)
@@ -161,3 +123,4 @@ class Questions:
 
         except Exception as e:
             return {"error": str(e)}, 500
+        

@@ -3,7 +3,9 @@ import os
 from google import genai
 from google.genai import types
 
-class Prompt:    
+class Prompt: 
+    
+    @staticmethod   
     def generate_MCQ(prompt):
         try:
             client = genai.Client(
@@ -97,6 +99,7 @@ class Prompt:
             "status": 500
         }
     
+    @staticmethod
     def generate_coding(prompt):
         try:
             client = genai.Client(
@@ -176,7 +179,8 @@ class Prompt:
             "details": str(e),
             "status": 500
         }
-            
+    
+    @staticmethod     
     def generate_fill_in(prompt):
         try: 
             client = genai.Client(
@@ -259,6 +263,7 @@ class Prompt:
             "status": 500
             }
     
+    @staticmethod
     def generate_drag_and_drop(prompt):
         try:
             client = genai.Client(
@@ -565,31 +570,52 @@ class Prompt:
                                 properties = {
                                     "levelSuggestion": genai.types.Schema(
                                         type = genai.types.Type.INTEGER,
-                                        description = "Recommended skill level (1 = Beginner, 2 = Intermediate, 3 = Advanced)",
+                                        description = "Recommended skill level is (1 = Beginner, 2 = Intermediate, 3 = Advanced)",
                                     ),
                                     "aiSummary": genai.types.Schema(
                                         type = genai.types.Type.STRING,
-                                        description = "Short summary of user performance to be shown on the dashboard",
+                                        description = "summary of user performance. Analyze tagPerformance to identify specific topic weaknesses. ",
                                     ),
                                     "feedbackPrompt": genai.types.Schema(
                                         type = genai.types.Type.STRING,
-                                        description = "Message to show the user in a popup when a level change is suggested",
+                                        description = "message to show the user as a popup when a level change is suggested",
                                     ),
+                                    "tagInsights": genai.types.Schema(
+                                        type = genai.types.Type.ARRAY,
+                                        description = "Top tags where the user did well",
+                                        items = genai.types.Schema(
+                                            type = genai.types.Type.OBJECT,
+                                            properties = {
+                                                "tag": genai.types.Schema(
+                                                    type = genai.types.Type.STRING,
+                                                    description = "Name of the top 7 tags. top tag=high percentage and high total"
+                                                ),
+                                                "score": genai.types.Schema(
+                                                    type = genai.types.Type.NUMBER,
+                                                    description = "percentage of the top 7 tags. top tag=high percentage and high total"
+                                                )
+                                            },
+                                            required = ["tag", "score"]
+                                        )
+                                    )
+
                                 },
                             ),
                 system_instruction=[
-                    types.Part.from_text(text="""You are an AI tutor evaluating Python learners' progress.
-                            Based on subunit-level stats, do three things:
-                            1. Write a short summary for dashboard
-                            2. Suggest level change
-                            3. Give popup message to user if level change is needed
+                    types.Part.from_text(text="""You are an python teacher checking learners' progress. earned age 10-17 
+                            Based on subunit-level stats, do:
+                            1. aiSummary (example: "keep up the good work! we suggest you to...")
+                            2. Suggest level number. 
+                            3. Give popup message to user if level change is needed, feedbackPrompt. (example: "do you want to change to level 2?", example: "we think you are ready for level 3", example: we suggest you to stay at level 1)
+                            4. tagInsights, select from tagPerformance top 7 tags. topTag == highest percentage AND highest total
                             
-                            When evaluating performance:
+                            When evaluating performance subunits(call them lessons):
                                 - Look at correct vs total answers ratio
                                 - Consider time spent vs average time
                                 - Review tag performance to identify strength/weakness areas
                                 - Analyze progress across multiple subunits
                                 - Consider current skill level when making recommendations
+                                - Analyze tagPerformance to identify specific topic weaknesses
                             """),
                 ],
             )

@@ -32,7 +32,7 @@ def submit_answers():
         if not isinstance(answers_data, list):
             return jsonify({"error": "payload must be a list of answers"}), 400
 
-        results = Answer.submit_answers(user_id, answers_data, skill_level)
+        results = AnswerService.submit_answers(user_id, answers_data, skill_level)
         return jsonify(results), 200
 
     except Exception as e:

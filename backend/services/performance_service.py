@@ -6,7 +6,7 @@ from config.settings import supabase_client
 class PerformanceService:
     def __init__(self, user_id):
         self.user_id = user_id
-    
+        
     def update_performance(self, unit_id, subunit_id, answers):
         try:
             # Process metrics from answers
@@ -121,7 +121,7 @@ class PerformanceService:
         except Exception as e:
             print(f"Error updating skill level: {str(e)}")
             return {"success": False, "error": str(e)}
-    
+    ####
     def model_feedback(self, unit_id, skill_level):
         try:
             unit_info = supabase_client.table("RefUnit") \
@@ -135,22 +135,22 @@ class PerformanceService:
                 
             unit_description = unit_info.data.get("unitDescription", "")
             performance_data = self.get_performance_for_unit(unit_id)
-            
             if not performance_data:
                 return {"success": False, "error": "No performance data found"}
-                
+            
+            #tag_performance = self.get_tag_performance()
+              
             prompt_data = {
                 "unitDescription": unit_description,
                 "currentSkillLevel": skill_level,
-                "subunitPerformance": performance_data
+                "subunitPerformance": performance_data,
+                #"tagPerformance": tag_performance
             }
-            
             ai_feedback = Prompt.check_performance(json.dumps(prompt_data))
             ai_feedback = json.loads(ai_feedback) 
-            
             if not ai_feedback or "error" in ai_feedback:
                 return {"success": False, "error": "Failed to generate AI feedback"}
-            
+
             for performance in performance_data:
                 performance_id = performance.get("performanceID")
                 if performance_id:
@@ -162,15 +162,50 @@ class PerformanceService:
                         }) \
                         .eq("performanceID", performance_id) \
                         .execute()
-            
             return {
-                "success": True, 
+                "success": True,
                 "feedback": ai_feedback
             }
-            
         except Exception as e:
             print(f"Error generating AI feedback: {str(e)}")
             return {"success": False, "error": str(e)}
     
     ########
- 
+    def get_tag_performance(self):
+            try:
+                performances = supabase_client.table("Performance") \
+                    .select("tags") \
+                    .eq("userID", self.user_id) \
+                    .order("updatedAt", desc=True) \
+                    .execute()
+                
+                if not performances.data:
+                    return {}
+                
+                all_tags = {}
+                for performance in performances.data:
+                    tags = performance.get("tags", {})
+                    for tag, metrics in tags.items():
+                        if tag not in all_tags:
+                            all_tags[tag] = {"correct": 0, "total": 0}
+                        
+                        all_tags[tag]["correct"] += metrics.get("correct", 0)
+                        all_tags[tag]["total"] += metrics.get("total", 0)
+                
+                tag_performance = {}
+                for tag, metrics in all_tags.items():
+                    if metrics["total"] > 0:
+                        percentage = (metrics["correct"] / metrics["total"]) * 100
+                        tag_performance[tag] = {
+                            "correct": metrics["correct"],
+                            "total": metrics["total"],
+                            "percentage": round(percentage, 2)
+                        }
+                
+                return tag_performance
+                
+            except Exception as e:
+                print(f"Error analyzing tag performance: {str(e)}")
+                return {}
+    
+    

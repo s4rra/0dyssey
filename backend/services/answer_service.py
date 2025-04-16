@@ -3,6 +3,7 @@ import json
 from prompt import Prompt 
 from config.settings import supabase_client 
 
+#utility class
 class ScoreCalculator:
     BASE_POINTS = {
         1: 5,  # MCQ
@@ -55,7 +56,7 @@ class ScoreCalculator:
         except Exception as e:
             return {"error": str(e)}
 
-class Answer:
+class AnswerModel:
     def __init__(self, answer_data, user_id, skill_level=None):
         if isinstance(answer_data, str):
             answer_data = json.loads(answer_data)
@@ -82,50 +83,7 @@ class Answer:
         self.retry = self.get_retry_count()
 
         self.load_question()
-
-    def get_retry_count(self):
-        try:
-            res = supabase_client.table("Answer") \
-                .select("retry") \
-                .eq("userID", self.user_id) \
-                .eq("questionID", self.question_id) \
-                .maybe_single() \
-                .execute()
-            data = res.data
-            if data:
-                return data.get("retry", 0) + 1
-            return 0
-        except Exception:
-            return 0
-
-    def load_question(self):
-        try:
-            res = supabase_client.table("Question") \
-                .select("questionText", "correctAnswer", "constraints", "avgTimeSeconds") \
-                .eq("questionID", self.question_id) \
-                .single() \
-                .execute()
-            q = res.data
-            
-            self.question_text = q.get("questionText", "")
-            self.correct_answer = q.get("correctAnswer", "")
-            self.constraints = q.get("constraints", "")
-            self.avg_time = q.get("avgTimeSeconds", 90)
-            
-            if isinstance(self.correct_answer, str):
-                try:
-                    self.correct_answer = json.loads(self.correct_answer)
-                except json.JSONDecodeError:
-                    pass
-                    
-            if isinstance(self.constraints, str):
-                try:
-                    self.constraints = json.loads(self.constraints)
-                except json.JSONDecodeError:
-                    pass
-        except Exception as e:
-            raise Exception("Failed to load question info: " + str(e))
-
+    
     def validate(self):
         if self.question_type_id in (1, 4):
             self.is_correct = self.user_answer == self.correct_answer
@@ -232,7 +190,51 @@ class Answer:
 
         except Exception as e:
             raise Exception("db save failed: " + str(e))
+    
+    def get_retry_count(self):
+        try:
+            res = supabase_client.table("Answer") \
+                .select("retry") \
+                .eq("userID", self.user_id) \
+                .eq("questionID", self.question_id) \
+                .maybe_single() \
+                .execute()
+            data = res.data
+            if data:
+                return data.get("retry", 0) + 1
+            return 0
+        except Exception:
+            return 0
 
+    def load_question(self):
+        try:
+            res = supabase_client.table("Question") \
+                .select("questionText", "correctAnswer", "constraints", "avgTimeSeconds") \
+                .eq("questionID", self.question_id) \
+                .single() \
+                .execute()
+            q = res.data
+            
+            self.question_text = q.get("questionText", "")
+            self.correct_answer = q.get("correctAnswer", "")
+            self.constraints = q.get("constraints", "")
+            self.avg_time = q.get("avgTimeSeconds", 90)
+            
+            if isinstance(self.correct_answer, str):
+                try:
+                    self.correct_answer = json.loads(self.correct_answer)
+                except json.JSONDecodeError:
+                    pass
+                    
+            if isinstance(self.constraints, str):
+                try:
+                    self.constraints = json.loads(self.constraints)
+                except json.JSONDecodeError:
+                    pass
+        except Exception as e:
+            raise Exception("Failed to load question info: " + str(e))
+
+class AnswerService:
     @staticmethod
     def submit_answers(user_id, answers_data, skill_level):
         try:
@@ -290,3 +292,4 @@ class Answer:
             results.append({"error": "Failed to update user points: " + str(e)})
 
         return {"results": results}
+    
