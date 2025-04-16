@@ -66,10 +66,14 @@ class Questions:
                 questions.extend(Questions.fetch_questions_by_type(subunit_id, q_type, limit))
 
             if not questions:
-                return {"error": "No questions found"}, 404
+                return {
+                    "questions": [],
+                    "message": "No questions found for this lesson. Try generating some!"
+                }, 200
 
-            return questions, 200
-
+            return {
+                "questions": questions
+            }, 200
         except Exception as e:
             return {"error": str(e)}, 500
 

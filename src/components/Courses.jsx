@@ -43,7 +43,7 @@ function Courses() {
                 {course.RefSubUnit.map((subUnit) => (
                   <li key={subUnit.subUnitID}>
                     <button
-                      onClick={() => navigate(`/subunit/${subUnit.subUnitID}/questions`)}
+                      onClick={() => navigate(`/questions/${course.unitID}/${subUnit.subUnitID}`)}
                       style={{ background: "none", border: "none", color: "blue", textDecoration: "underline", cursor: "pointer" }}
                     >
                       {subUnit.subUnitName}

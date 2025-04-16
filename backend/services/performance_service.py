@@ -208,4 +208,40 @@ class PerformanceService:
                 print(f"Error analyzing tag performance: {str(e)}")
                 return {}
     
-    
+    def get_summary(self):
+        try:
+            # Get list of all subunits the user has attempted
+            distinct_subunits = supabase_client.rpc('get_distinct_subunits', {
+                'user_id': self.user_id
+            }).execute()
+
+            if not distinct_subunits.data:
+                return []
+                
+            # For each subunit, get the latest performance
+            dashboard_items = []
+            for subunit_record in distinct_subunits.data:
+                subunit_id = subunit_record.get("subUnitID")
+                if subunit_id:
+                    performance = self.get_performance_history(subunit_id)
+                    if performance:
+                        # Get subunit and unit info
+                        subunit_info = supabase_client.table("RefSubUnit") \
+                            .select("subUnitDescription, RefUnit(unitDescription, unitID)") \
+                            .eq("subUnitID", subunit_id) \
+                            .single() \
+                            .execute()
+                            
+                        if subunit_info.data:
+                            # Add unit and subunit info to performance data
+                            performance["subUnitDescription"] = subunit_info.data.get("subUnitDescription", "")
+                            performance["unitDescription"] = subunit_info.data.get("RefUnit", {}).get("unitDescription", "")
+                            performance["unitID"] = subunit_info.data.get("RefUnit", {}).get("unitID")
+                            
+                            dashboard_items.append(performance)
+
+            return dashboard_items
+
+        except Exception as e:
+            print(f"Error getting dashboard summary: {str(e)}")
+            return []

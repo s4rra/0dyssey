@@ -14,13 +14,14 @@ function Questions() {
   const [hintLoading, setHintLoading] = useState(false);
   const [notification, setNotification] = useState(null);
 
-  const { subunitId } = useParams();
+  const { unitId, subunitId } = useParams(); //get from url
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const API_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/questions`;
   const SUBMIT_URL = `http://127.0.0.1:8080/api/submit-answers`;
   const GENERATE_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/generate-questions`;
   const HINT_USED_URL = `http://127.0.0.1:8080/api/hint-used`;
+  const PERFORMANCE_URL = `http://127.0.0.1:8080/api/performance/submit/${unitId}/${subunitId}`;
 
   useEffect(() => {
     if (!token) {
@@ -37,14 +38,20 @@ function Questions() {
       const res = await fetch(API_URL, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
+      const result = await res.json();
+  
+      const data = result.questions || [];
       setQuestions(data);
-      
-      const startTimes = {};
-      data.forEach(q => {
-        startTimes[q.questionID] = Math.floor(Date.now() / 1000);
-      });
-      setQuestionStartTimes(startTimes);
+  
+      if (data.length === 0 && result.message) {
+        setNotification(result.message);
+      } else {
+        const startTimes = {};
+        data.forEach(q => {
+          startTimes[q.questionID] = Math.floor(Date.now() / 1000);
+        });
+        setQuestionStartTimes(startTimes);
+      }
     } catch (err) {
       alert("Error fetching questions");
     } finally {
@@ -53,7 +60,7 @@ function Questions() {
       setSubmissionResults({});
       setShowHints({});
     }
-  };
+  };  
 
   const handleAnswerChange = (questionId, value) => {
     setUserAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -114,7 +121,7 @@ function Questions() {
   const submitAnswers = async () => {
     setLoading(true);
     const currentTime = Math.floor(Date.now() / 1000);
-      try {
+    try {
       const answersData = questions.map(q => ({
         questionId: q.questionID,
         questionTypeId: q.questionTypeID,
@@ -122,7 +129,7 @@ function Questions() {
         startTime: questionStartTimes[q.questionID] || currentTime - 60,
         endTime: currentTime
       }));
-
+  
       const res = await fetch(SUBMIT_URL, {
         method: "POST",
         headers: {
@@ -131,8 +138,9 @@ function Questions() {
         },
         body: JSON.stringify(answersData)
       });
-
+  
       const result = await res.json();
+  
       if (result.results) {
         const resultsMap = result.results.reduce((acc, r) => {
           acc[r.questionId] = r;
@@ -141,16 +149,39 @@ function Questions() {
         setSubmissionResults(resultsMap);
         const totalPoints = result.results.reduce((sum, r) => sum + (r.points || 0), 0);
         setTotalPoints(totalPoints);
+  
+       submitPerformance(result.results);
       } else {
         alert("Error submitting answers");
       }
     } catch (err) {
       alert("Submission failed");
+      console.error("submitAnswers failed:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const submitPerformance = async (answerResults) => {
+    try {
+      const res = await fetch(PERFORMANCE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(answerResults)
+      });
+  
+      const perfResult = await res.json();
+      if (!perfResult.success) {
+        console.warn("Performance submission failed:", perfResult.error);
+      }
+    } catch (err) {
+      console.error("submitPerformance failed:", err);
+    }
+  };
+    
   return (
     <div className="questions-container">
       <h2 className="questions-title">Questions</h2>
@@ -185,7 +216,10 @@ function Questions() {
         <button onClick={generateMoreQuestions} className="generate-button">
           More Questions?
         </button>
-        <button className="generate-button">
+        <button
+          className="generate-button"
+          onClick={() => navigate("/courses")}
+        >
           Next
         </button>
         {loading && <div className="loading">Loading...</div>}

@@ -254,7 +254,7 @@ class AnswerService:
                     return {"results": [], "error": f"Failed to parse entry: {str(e)}"}
 
             try:
-                ans = Answer(a, user_id, skill_level)
+                ans = AnswerModel(a, user_id, skill_level)
                 ans.validate()
                 ans.persist()
                 total_points += ans.points
