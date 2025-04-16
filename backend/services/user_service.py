@@ -105,39 +105,42 @@ class UserService:
         try:
             user_id = user["id"]
             print("profile got user id")
-
-            # get user + RefUnit + RefSubUnit
-            response1 = (
+            response = (
                 supabase_client
                 .table("User")
                 .select("*, RefUnit(unitDescription), RefSubUnit(subUnitDescription)")
                 .eq("userID", user_id)
-                .single()
+                .single()  #one row only
                 .execute()
             )
-
-            # get ProfilePictures
-            response2 = (
-                supabase_client
-                .from_("User")
-                .select("ProfilePictures!inner(pictureID, imagePath, displayName)")
-                .eq("userID", user_id)
-                .single()
-                .execute()
-            )
-
-            if not response1.data:
+            if not response.data:
                 return {"error": "User not found"}, 404
 
-            # Merge second call into the first
-            user_data = response1.data
-            user_data["ProfilePictures"] = response2.data.get("ProfilePictures") if response2.data else None
-
-            return user_data, 200
+            return response.data, 200  #no need for [0] after .single()
 
         except Exception as e:
             return {"error": str(e)}, 500
+    ###########
+    @staticmethod
+    def get_user_profile2(user):
+        try:
+            user_id = user["id"]  # extract userID from session
 
+            # Fetch user data with profile picture join
+            response = supabase_client.from_("User") \
+                .select("*, ProfilePictures!inner(pictureID, imagePath, displayName)") \
+                .eq("userID", user_id) \
+                .execute()
+
+            if not response.data:
+                return {"error": "User not found"}, 404
+
+            return response.data, 200  #no need for [0] after .single()
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+    ###########
+    
     @staticmethod
     def get_profile_pictures():
         try:

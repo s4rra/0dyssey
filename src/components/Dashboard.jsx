@@ -14,7 +14,7 @@ function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const API_URL = "http://127.0.0.1:8080/api/user-profile";
+  const API_URL = "http://127.0.0.1:8080/api/user-profile2";
 
   useEffect(() => {
     // Fetch user data when component mounts
