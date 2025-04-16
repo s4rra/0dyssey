@@ -1,35 +1,4 @@
 
-  .card {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: left;
-    font-weight: bold;
-    min-height: 150px;
-  }
-  
-  .blank {
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-  }
-  
-  .weekly-overview {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-height: 200px;
-  }
-  
-  @media (max-width: 768px) {
-    .cards-container {
-      grid-template-columns: 1fr;
-    }
-  
-    .weekly-overview {
-      grid-column: 1 / -1;
-    }
-  }
-
 /*NEW----------------------------------------------------------------*/
 .cards-container {
   display: flex;
