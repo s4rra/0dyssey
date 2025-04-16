@@ -1,68 +1,100 @@
 import { Link, NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
+import { useState } from "react";
 import "../css/page.css";
+import {
+  FiMenu,
+  FiBook,
+  FiTarget,
+  FiShoppingCart,
+  FiSettings,
+  FiHome,
+  FiBookmark,
+} from "react-icons/fi";
 
 function Page({ children }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   return (
     <div className="dashboard">
-      <aside className="sidebar">
-        <Link to="/dashboard" className="logo">
-          Odyssey
-        </Link>
+      <header className="header">
+        <div className="header-content">
+          <button
+            className="menu-toggle"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <FiMenu size={24} />
+          </button>
+          <Link to="/dashboard" className="logo">
+            Odyssey
+          </Link>
+        </div>
+      </header>
+      <aside className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <nav>
-          <ul>
-            <li>
+          <ul className="sidebar-nav-list">
+            <li className="sidebar-item">
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) => (isActive ? "active" : "")}
+              >
+                <FiHome className="sidebar-icon" />
+                <span className="sidebar-text">Home</span>
+              </NavLink>
+            </li>
+            <li className="sidebar-item">
               <NavLink
                 to="/courses"
                 className={({ isActive }) => (isActive ? "active" : "")}
-                style={{ textDecoration: "none" }}
               >
-                Courses
+                <FiBook className="sidebar-icon" />
+                <span className="sidebar-text">Courses</span>
               </NavLink>
             </li>
-            <li>
+            <li className="sidebar-item">
               <NavLink
                 to="/missions"
                 className={({ isActive }) => (isActive ? "active" : "")}
-                style={{ textDecoration: "none" }}
               >
-                Missions
+                <FiTarget className="sidebar-icon" />
+                <span className="sidebar-text">Missions</span>
               </NavLink>
             </li>
-            <li>
+            <li className="sidebar-item">
+              <NavLink
+                to="/bookmarks"
+                className={({ isActive }) => (isActive ? "active" : "")}
+              >
+                <FiBookmark className="sidebar-icon" />
+                <span className="sidebar-text">Bookmarks</span>
+              </NavLink>
+            </li>
+            <li className="sidebar-item">
               <NavLink
                 to="/shop"
                 className={({ isActive }) => (isActive ? "active" : "")}
-                style={{ textDecoration: "none" }}
               >
-                Shop
+                <FiShoppingCart className="sidebar-icon" />
+                <span className="sidebar-text">Shop</span>
               </NavLink>
             </li>
-            <li>
+          </ul>
+          <ul className="sidebar-settings-list">
+            <li className="sidebar-item">
               <NavLink
                 to="/settings"
                 className={({ isActive }) => (isActive ? "active" : "")}
-                style={{ textDecoration: "none" }}
               >
-                Settings
+                <FiSettings className="sidebar-icon" />
+                <span className="sidebar-text">Settings</span>
               </NavLink>
             </li>
           </ul>
         </nav>
       </aside>
-      <main className="main-content">
-        <header className="header">
-          <div>
-            <span>0⚡</span>
-            <NavLink
-              to="/profile"
-              className={({ isActive }) => (isActive ? "active" : "")}
-              style={{ textDecoration: "none" }}
-            >
-              Profile
-            </NavLink>
-          </div>
-        </header>
+      <main
+        className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}
+      >
         <section className="dashboard-content">{children}</section>
       </main>
     </div>

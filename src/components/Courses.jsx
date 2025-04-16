@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet, useParams } from "react-router-dom";
+import "../css/courses.css";
 
 function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { subUnitId } = useParams(); // Detect if a subunit is selected
   const API_URL = "http://127.0.0.1:8080/api/courses";
 
   useEffect(() => {
@@ -15,9 +17,7 @@ function Courses() {
       return;
     }
 
-    fetch(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(API_URL, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
       .then((data) => {
         setCourses(data);
@@ -27,36 +27,42 @@ function Courses() {
         console.error("Error fetching courses:", err);
         setLoading(false);
       });
-  }, []);
+  }, [navigate]);
 
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div>
-      <h2>Courses</h2>
-      <ul>
-        {courses.map((course) => (
-          <li key={course.unitID}>
-            <h3>{course.unitName}</h3>
-            {course.RefSubUnit && course.RefSubUnit.length >= 0 ? (
-              <ul>
-                {course.RefSubUnit.map((subUnit) => (
-                  <li key={subUnit.subUnitID}>
+    <div className="courses-container">
+      <h2 className="courses-title">Courses</h2>
+
+      {/* If a subunit is selected, show it inside the page */}
+      {subUnitId ? (
+        <Outlet />
+      ) : (
+        <div className="courses-grid">
+          {courses.map((course) => (
+            <div key={course.unitID} className="course-card">
+              <span className="course-category">Skill Path</span>
+              <h3 className="course-title">{course.unitName}</h3>
+              <p className="course-description">{course.unitDescription}</p>
+
+              {course.RefSubUnit && course.RefSubUnit.length > 0 && (
+                <div className="subunits-container">
+                  {course.RefSubUnit.map((subUnit) => (
                     <button
-                      onClick={() => navigate(`/questions/${course.unitID}/${subUnit.subUnitID}`)}
-                      style={{ background: "none", border: "none", color: "blue", textDecoration: "underline", cursor: "pointer" }}
+                      key={subUnit.subUnitID}
+                      onClick={() => navigate(`/courses/subunit/${subUnit.subUnitID}`)}
+                      className="subunit-button"
                     >
                       {subUnit.subUnitName}
                     </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No subunits available</p>
-            )}
-          </li>
-        ))}
-      </ul>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
