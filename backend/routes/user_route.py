@@ -35,9 +35,20 @@ def get_user_profile():
     return jsonify(result), status_code
 @user_bp.route("/profile-pictures", methods=["GET"])
 def get_profile_pictures():
-    result, status_code = UserService.get_profile_pictures()
-    return jsonify(result), status_code
-
+    try:
+        auth_result = verify_token()
+        # If verify_token returns a tuple, it's an error response
+        if isinstance(auth_result, tuple):
+            # For non-authenticated users, just get all profile pictures without availability info
+            result, status_code = UserService.get_profile_pictures()
+            return jsonify(result), status_code
+        
+        # For authenticated users, get profile pictures with availability info
+        user = auth_result
+        result, status_code = UserService.get_profile_pictures(user["id"])
+        return jsonify(result), status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 @user_bp.route("/update-profile-picture", methods=["POST"])
 def update_profile_picture():
     auth_result = verify_token()

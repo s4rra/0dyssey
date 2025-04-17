@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./components/Dashboard";
-import Profile from "./components/Profile";
 import Courses from "./components/Courses";
 import Missions from "./components/Missions";
 import MissionDetail from "./components/MissionDetail"; // Make sure to import this
@@ -20,7 +19,6 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/dashboard" element={<Page><Dashboard /></Page>} />
-                <Route path="/profile" element={<Page><Profile /></Page>} />
                 <Route path="/courses" element={<Page><Courses /></Page>}>
                     <Route path="subunit/:subUnitId" element={<SubUnit />} />
                 </Route>

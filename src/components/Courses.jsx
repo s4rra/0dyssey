@@ -42,7 +42,6 @@ function Courses() {
         <div className="courses-grid">
           {courses.map((course) => (
             <div key={course.unitID} className="course-card">
-              <span className="course-category">Skill Path</span>
               <h3 className="course-title">{course.unitName}</h3>
               <p className="course-description">{course.unitDescription}</p>
 

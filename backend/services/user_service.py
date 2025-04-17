@@ -13,16 +13,17 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 class UserService:
     @staticmethod
     def signup(email, password, username, chosen_skill_level, dob):
+        """Register a new user account."""
         try:
-            # Check if email already exists in User table
-            existing_user = supabase_client.from_("User").select("userID").eq("Email", email).execute()
+            existing_user = supabase_client.from_("User") \
+                .select("userID") \
+                .eq("Email", email) \
+                .execute()
+
             if existing_user.data:
                 return {"error": "Email already registered."}, 400
 
-            # Manually generate a userID using UUID
             user_id = str(uuid.uuid4())
-
-            # Insert user into User table
             response = supabase_client.from_("User").insert({
                 "userID": user_id,
                 "Email": email,
@@ -45,10 +46,12 @@ class UserService:
 
     @staticmethod
     def login(email, password):
+        """Authenticate user and return access token."""
         try:
-            user_response = supabase_client.from_("User").select(
-                "userID, Password, streakLength, lastLogin"
-            ).eq("Email", email).execute()
+            user_response = supabase_client.from_("User") \
+                .select("userID, Password, streakLength, lastLogin") \
+                .eq("Email", email) \
+                .execute()
 
             user_data = user_response.data
             if not user_data:
@@ -56,11 +59,9 @@ class UserService:
 
             user = user_data[0]
 
-            # Password check
             if not check_password_hash(user["Password"], password):
                 return {"error": "Invalid email or password"}, 401
 
-            # Streak calculation
             current_date = datetime.now(timezone.utc).date()
             streak_length = user.get("streakLength", 0)
             last_login = user.get("lastLogin")
@@ -77,13 +78,11 @@ class UserService:
             else:
                 new_streak = 0
 
-            # Update user streak info
             supabase_client.from_("User").update({
                 "streakLength": new_streak,
                 "lastLogin": current_date.isoformat()
             }).eq("userID", user["userID"]).execute()
 
-            # Generate JWT token
             token_payload = {
                 "userID": user["userID"],
                 "exp": datetime.now(timezone.utc) + timedelta(hours=2)
@@ -102,10 +101,10 @@ class UserService:
 
     @staticmethod
     def get_user_profile(user):
+        """Fetch user's profile including profile picture."""
         try:
-            user_id = user["id"]  # extract userID from session
+            user_id = user["id"]
 
-            # Fetch user data with profile picture join
             response = supabase_client.from_("User") \
                 .select("*, ProfilePictures!inner(pictureID, imagePath, displayName)") \
                 .eq("userID", user_id) \
@@ -120,25 +119,31 @@ class UserService:
             return {"error": str(e)}, 500
 
     @staticmethod
-    def get_profile_pictures():
+    def get_profile_pictures(user_id=None):
+        """Get available profile pictures with availability status for a user."""
         try:
-            response = supabase_client.from_("ProfilePictures").select("*").execute()
-            return response.data, 200
+            # Get all profile pictures
+            all_pictures = supabase_client.from_("ProfilePictures").select("*").execute()
+            
+            # If no user_id is provided, return all pictures without availability info
+            if user_id is None:
+                return all_pictures.data, 200
+                
+            # Get user's purchased profile pictures from shop
+            user_purchases = supabase_client.from_("UserPurchases") \
+                .select("Shop!inner(relatedID)") \
+                .eq("userID", user_id) \
+                .eq("Shop.itemType", "profile_picture") \
+                .execute()
+            
+            # Extract purchased profile picture IDs
+            purchased_picture_ids = {item["Shop"]["relatedID"] for item in user_purchases.data}
+            
+            # Mark pictures as available or locked
+            for picture in all_pictures.data:
+                picture["available"] = picture["pictureID"] in purchased_picture_ids
+            
+            return all_pictures.data, 200
         except Exception as e:
             print(f"Error fetching profile pictures: {e}")
-            return {"error": str(e)}, 500
-
-    @staticmethod
-    def update_profile_picture(user_id, picture_id):
-        try:
-            response = supabase_client.from_("User").update({
-                "profilePicture": picture_id
-            }).eq("userID", user_id).execute()
-
-            if not response.data:
-                return {"error": "Failed to update profile picture"}, 404
-
-            return {"message": "Profile picture updated successfully"}, 200
-        except Exception as e:
-            print(f"Error updating profile picture: {e}")
             return {"error": str(e)}, 500
