@@ -1,133 +1,328 @@
 import "../css/dashboard.css";
 import "../css/calendar.css";
+import "../css/ProfilePicture.css";
 import Calendar from "react-calendar";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProfilePicture from "./ProfilePicture";
+import { Radar } from "react-chartjs-2";
+import {
+  CheckCircle2,
+  BookOpen,
+  Clock,
+  MessageSquare,
+  ListChecks,
+} from "lucide-react";
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
+
+const API_PROFILE = "http://127.0.0.1:8080/api/user-profile2";
+const API_FEEDBACK = (unitId) => `http://127.0.0.1:8080/api/performance/unit/${unitId}`;
+const API_HISTORY = (subunitId) => `http://127.0.0.1:8080/api/performance/history/${subunitId}`;
+const API_SKILL_UPDATE = "http://127.0.0.1:8080/api/performance/skill-level";
 
 function Dashboard() {
   const [date, setDate] = useState(new Date());
-  const [userData, setUserData] = useState({
-    streakLength: 0,
-    lastLogin: null,
-    profilePicture: null,
-  });
+  const [userData, setUserData] = useState(null);
+  const [feedbackData, setFeedbackData] = useState(null);
+  const [activityLog, setActivityLog] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
-  const API_URL = "http://127.0.0.1:8080/api/user-profile2";
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    // Fetch user data when component mounts
-    const fetchUserData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in first.");
-        navigate("/login");
-        return;
-      }
-
-      try {
-        const response = await fetch(API_URL, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        setUserData({
-          streakLength: data.streakLength || 0,
-          lastLogin: data.lastLogin ? new Date(data.lastLogin) : null,
-          profilePicture: data.profilePicture || null,
-          username: data.userName,
-        });
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [navigate]);
-
-  // Function to check if a date is part of the streak
-  const isStreakDay = (date) => {
-    if (!userData.lastLogin) return false;
-
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-
-    // Calculate the start date of the streak
-    const startDate = new Date(userData.lastLogin);
-    startDate.setHours(0, 0, 0, 0);
-    startDate.setDate(startDate.getDate() - (userData.streakLength - 1));
-
-    // Check if the date is between the start date and last login date (inclusive)
-    return checkDate >= startDate && checkDate <= new Date(userData.lastLogin);
-  };
-
-  // Function to add custom classes to calendar tiles
-  const tileClassName = ({ date, view }) => {
-    if (view !== "month") return "";
-
-    // Check if this date is part of the streak
-    if (isStreakDay(date)) {
-      // Check if it's the last login date
-      const lastLoginDate = userData.lastLogin
-        ? new Date(userData.lastLogin)
-        : null;
-      lastLoginDate?.setHours(0, 0, 0, 0);
-
-      const tileDate = new Date(date);
-      tileDate.setHours(0, 0, 0, 0);
-
-      if (lastLoginDate && tileDate.getTime() === lastLoginDate.getTime()) {
-        return "streak-day current-streak-day";
-      }
-      return "streak-day";
+    if (!token) {
+      alert("Please log in first.");
+      navigate("/login");
+      return;
     }
 
-    return "";
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const res = await fetch(API_PROFILE, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      const profile = {
+        streakLength: data.streakLength || 0,
+        lastLogin: data.lastLogin ? new Date(data.lastLogin) : null,
+        profilePicture: data.profilePicture || null,
+        username: data.userName || "Student",
+        currentUnit: data.currentUnit || 1,
+        currentSubUnit: data.currentSubUnit || null,
+      };
+
+      setUserData(profile);
+
+      await fetchFeedback(profile.currentUnit);
+      if (profile.currentSubUnit) {
+        await fetchActivity(profile.currentSubUnit);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Handle profile picture update
-  const handleProfilePictureUpdate = (picture) => {
-    setUserData((prev) => ({
-      ...prev,
-      profilePicture: picture.pictureID,
-    }));
+  const fetchFeedback = async (unitId) => {
+    try {
+      const res = await fetch(API_FEEDBACK(unitId), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const result = await res.json();
+      if (result.feedback) setFeedbackData(result.feedback);
+    } catch (err) {
+      console.error("Failed to fetch feedback:", err);
+    }
   };
 
-  if (loading) return <p>Loading...</p>;
+  const fetchActivity = async (subunitId) => {
+    try {
+      const res = await fetch(API_HISTORY(subunitId), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      const log = data.map((entry) => ({
+        lesson: entry.subUnitDescription || `Subunit ${entry.subUnitID}`,
+        score: `${entry.correctAnswers}/${entry.totalQuestions}`,
+        time: `${Math.round(entry.totalTimeTaken / 60)}m`,
+        date: formatDate(entry.updatedAt),
+      }));
+
+      setActivityLog(log);
+    } catch (err) {
+      console.error("Failed to fetch activity:", err);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  const isStreakDay = (d) => {
+    if (!userData?.lastLogin) return false;
+    const date = new Date(d);
+    date.setHours(0, 0, 0, 0);
+
+    const lastLogin = new Date(userData.lastLogin);
+    lastLogin.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(lastLogin);
+    startDate.setDate(startDate.getDate() - (userData.streakLength - 1));
+
+    return date >= startDate && date <= lastLogin;
+  };
+
+  const tileClassName = ({ date, view }) => {
+    if (view !== "month") return "";
+    const isCurrent = userData?.lastLogin && date.getTime() === userData.lastLogin.setHours(0, 0, 0, 0);
+    return isStreakDay(date)
+      ? isCurrent
+        ? "streak-day current-streak-day"
+        : "streak-day"
+      : "";
+  };
+
+  const handlePictureChange = (pic) => {
+    setUserData((prev) => ({ ...prev, profilePicture: pic.pictureID }));
+  };
+
+  const confirmLevelSuggestion = async () => {
+    try {
+      const res = await fetch(API_SKILL_UPDATE, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ skillLevel: feedbackData.levelSuggestion }),
+      });
+
+      const result = await res.json();
+      if (!result.success) console.warn("Skill update failed", result);
+    } catch (err) {
+      console.error("Skill update error:", err);
+    }
+  };
+
+  const radarData = {
+    labels: feedbackData?.tagInsights.map((t) => t.tag) || [],
+    datasets: [
+      {
+        label: "Progress",
+        data: feedbackData?.tagInsights.map((t) => t.score) || [],
+        backgroundColor: "rgba(34,197,94,0.2)",
+        borderColor: "rgba(34,197,94,1)",
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const radarOptions = {
+    scales: {
+      r: {
+        min: 0,
+        max: 100,
+        ticks: { stepSize: 20, backdropColor: "transparent" },
+      },
+    },
+    plugins: { legend: { display: false } },
+    events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
+    interaction: {
+      mode: "nearest",
+      axis: "x",
+      intersect: false,
+    },
+  };
+
+  const calcStats = () => {
+    let totalQ = 0,
+      correct = 0,
+      minutes = 0;
+
+    activityLog.forEach((log) => {
+      const [c, t] = log.score.split("/").map(Number);
+      correct += c;
+      totalQ += t;
+      minutes += parseInt(log.time) || 0;
+    });
+
+    const acc = totalQ ? Math.round((correct / totalQ) * 100) : 0;
+    return `This week you answered ${totalQ} questions with ${acc}% accuracy over ${minutes}m`;
+  };
+
+  if (loading || !userData) return <p>Loading...</p>;
+
   return (
-    <main className="main-content">
-      <section className="dashboard-content">
-        <h2>Welcome, {userData.username}!</h2>
-        
-        <div className="cards-container">
-          {/* Profile Picture Card - now first in column */}
-          <div className="card profile-card">
-            <ProfilePicture 
-              onPictureSelect={handleProfilePictureUpdate}
-              currentPictureId={userData.profilePicture}
-            />
-          </div>
-          
-          {/* Calendar Card - now second in column */}
-          <div className="card calendar-card">
-            <Calendar 
-              onChange={setDate} 
-              value={date}
-              tileClassName={tileClassName}
-            />
-          </div>
-        </div>
-      </section>
+    <div className="dashboard-page">
+      <h2 className="dashboard-heading">Welcome {userData.username}!</h2>
 
-    </main>
+      <div className="cards-container">
+        <div className="profile-card">
+          <ProfilePicture
+            currentPictureId={userData.profilePicture}
+            onPictureSelect={handlePictureChange}
+          />
+        </div>
+
+        <div className="calendar-card">
+          <Calendar
+            value={date}
+            onChange={setDate}
+            tileClassName={tileClassName}
+          />
+        </div>
+      </div>
+
+      <div className="cards-container">
+        <div className="card">
+          <div className="card-header">
+            <h3>Objectives</h3>
+            <ListChecks className="card-icon" />
+          </div>
+          <ul>
+            {feedbackData?.aiSummary
+              ?.split(". ")
+              .slice(0, 3)
+              .map((obj, i) => (
+                <li key={i} className="objective-item">
+                  <CheckCircle2 className="objective-icon" />
+                  <span>{obj}</span>
+                </li>
+              ))}
+          </ul>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>Activity Log</h3>
+            <BookOpen className="card-icon" />
+          </div>
+          {activityLog.length > 0 ? (
+            activityLog.map((a, i) => (
+              <div key={i} className="log-row">
+                <div>
+                  <p className="log-title">{a.lesson}</p>
+                  <p className="log-date">{a.date}</p>
+                </div>
+                <div className="log-metrics">
+                  <p className="log-score">{a.score}</p>
+                  <p className="log-time">{a.time}</p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>No activity yet.</p>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>Weekly Stats</h3>
+            <Clock className="card-icon" />
+          </div>
+          <p>{calcStats()}</p>
+        </div>
+      </div>
+
+      <div className="cards-container">
+        <div className="card">
+          <h3 className="section-title">Progress Chart</h3>
+          {feedbackData?.tagInsights.length > 0 ? (
+            <Radar data={radarData} options={radarOptions} />
+          ) : (
+            <p>No chart data yet</p>
+          )}
+        </div>
+
+        <div className="card suggestion-box">
+          <div className="card-header">
+            <h3>Quick Note</h3>
+            <MessageSquare className="card-icon" />
+          </div>
+          <p className="note-text">{feedbackData?.aiSummary}</p>
+          <p className="suggestion-text">{feedbackData?.feedbackPrompt}</p>
+          <button className="confirm-button" onClick={confirmLevelSuggestion}>
+            Ok!
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
