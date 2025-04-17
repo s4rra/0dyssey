@@ -5,14 +5,50 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 20px;
     margin-top: 20px;
+    position: relative;
+  }
+  
+  .objectives-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
   }
   
   .objectives-title {
     font-size: 1.3rem;
-    margin-bottom: 15px;
     color: #333;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+    margin: 0;
+  }
+  
+  .course-navigation {
+    display: flex;
+    align-items: center;
+  }
+  
+  .course-counter {
+    font-size: 0.9rem;
+    color: #777;
+    font-weight: 500;
+  }
+  
+  .course-card {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    position: relative;
+    min-height: 250px;
+  }
+  
+  .course-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 8px;
   }
   
   .objectives-list {
@@ -23,7 +59,7 @@
   
   .objective-item {
     padding: 12px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #e0e0e0;
     transition: background-color 0.2s ease;
   }
   
@@ -32,7 +68,9 @@
   }
   
   .objective-item:hover {
-    background-color: #f9f9f9;
+    background-color: #f1f3f6;
+    border-radius: 4px;
+    padding-left: 5px;
   }
   
   .objective-content {
@@ -102,6 +140,44 @@
     font-weight: bold;
   }
   
+  .navigation-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .nav-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+  }
+  
+  .nav-button:hover {
+    background-color: #2980b9;
+    transform: scale(1.05);
+  }
+  
+  .nav-button:active {
+    transform: scale(0.95);
+  }
+  
+  .prev-button {
+    margin-right: auto;
+  }
+  
+  .next-button {
+    margin-left: auto;
+  }
+  
   .objectives-loading,
   .objectives-error,
   .no-objectives {
@@ -112,4 +188,23 @@
   
   .objectives-error {
     color: #e74c3c;
+  }
+  
+  /* Progress indicator */
+  .progress-indicators {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    gap: 5px;
+  }
+  
+  .progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ccc;
+  }
+  
+  .progress-dot.active {
+    background-color: #3498db;
   }

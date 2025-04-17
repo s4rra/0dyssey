@@ -94,15 +94,12 @@ function Dashboard() {
       profilePicture: picture.pictureID,
     }));
   };
-
-  // Handle points update from completing objectives
+  
   const handlePointsUpdate = (pointsAwarded) => {
-    if (pointsAwarded > 0) {
-      setUserData((prev) => ({
-        ...prev,
-        points: prev.points + pointsAwarded,
-      }));
-    }
+    setUserData((prev) => ({
+      ...prev,
+      points: prev.points + pointsAwarded,
+    }));
   };
 
   if (loading) return <p>Loading...</p>;
@@ -113,15 +110,13 @@ function Dashboard() {
         <h2>Welcome, {userData.username}!</h2>
 
         <div className="cards-container">
-          {/* Profile Picture */}
           <div className="card profile-card">
             <ProfilePicture
               onPictureSelect={handleProfilePictureUpdate}
               currentPictureId={userData.profilePicture}
+              userPoints={userData.points}
             />
           </div>
-
-          {/* Streak Calendar */}
           <div className="card calendar-card">
             <Calendar
               onChange={setDate}
@@ -129,14 +124,6 @@ function Dashboard() {
               tileClassName={tileClassName}
             />
           </div>
-
-          {/* Points Card */}
-          <div className="card points-card">
-            <h3>Your Points</h3>
-            <p className="points-value">{userData.points}</p>
-          </div>
-          
-          {/* Objectives Card */}
           <div className="card objectives-card">
             <Objectives onPointsEarned={handlePointsUpdate} />
           </div>

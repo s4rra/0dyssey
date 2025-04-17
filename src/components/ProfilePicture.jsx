@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../css/profilePicture.css";
 
-function ProfilePicture({ onPictureSelect, currentPictureId }) {
+function ProfilePicture({ onPictureSelect, currentPictureId, userPoints }) {
   const [pictures, setPictures] = useState([]);
   const [showSelector, setShowSelector] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -94,6 +94,7 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
       console.error("Error updating profile picture:", err);
     }
   };
+  
   // Toggle the picture selector
   const toggleSelector = () => {
     setShowSelector(!showSelector);
@@ -108,11 +109,17 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
     <div className="profile-picture-container">
       <div className="current-picture" onClick={toggleSelector}>
         {currentPicture ? (
-          <img
-            src={currentPicture.imagePath}
-            alt={currentPicture.displayName}
-            className="profile-image"
-          />
+          <>
+            <img
+              src={currentPicture.imagePath}
+              alt={currentPicture.displayName}
+              className="profile-image"
+            />
+            <div className="points-display">
+              <span className="points-label">Points:</span>
+              {userPoints || 0}
+            </div>
+          </>
         ) : (
           <div className="no-picture">Select Picture</div>
         )}
