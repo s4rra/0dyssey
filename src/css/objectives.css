@@ -1,0 +1,115 @@
+/* objectives.css */
+.objectives-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-top: 20px;
+  }
+  
+  .objectives-title {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
+  
+  .objectives-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .objective-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+  }
+  
+  .objective-item:last-child {
+    border-bottom: none;
+  }
+  
+  .objective-item:hover {
+    background-color: #f9f9f9;
+  }
+  
+  .objective-content {
+    display: flex;
+    align-items: center;
+  }
+  
+  .objective-status {
+    flex: 0 0 40px;
+    text-align: center;
+  }
+  
+  .objective-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .objective-name {
+    font-weight: 500;
+    color: #444;
+  }
+  
+  .completed {
+    opacity: 0.7;
+  }
+  
+  .completed .objective-name {
+    text-decoration: line-through;
+    color: #777;
+  }
+  
+  .checkmark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: #4caf50;
+    color: white;
+    border-radius: 50%;
+    font-size: 14px;
+  }
+  
+  .complete-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .complete-button:hover {
+    background-color: #2980b9;
+  }
+  
+  .points-badge {
+    background-color: #f8d775;
+    color: #946c00;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+  
+  .objectives-loading,
+  .objectives-error,
+  .no-objectives {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+  }
+  
+  .objectives-error {
+    color: #e74c3c;
+  }

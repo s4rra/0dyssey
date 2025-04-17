@@ -63,20 +63,25 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
         setError("Authentication required");
         return;
       }
-      // In the ProfilePicture component
-      const response = await fetch(`${API_URL}/profile-pictures`, {
+
+      // First, update the profile picture in the database
+      const updateResponse = await fetch(`${API_URL}/update-profile-picture`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ pictureID: picture.pictureID }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
         throw new Error(
-          errorData.error || `HTTP error! Status: ${response.status}`
+          errorData.error || `HTTP error! Status: ${updateResponse.status}`
         );
       }
 
+      // After successfully updating, set the current picture
       setCurrentPicture(picture);
       setShowSelector(false);
 
@@ -89,7 +94,6 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
       console.error("Error updating profile picture:", err);
     }
   };
-
   // Toggle the picture selector
   const toggleSelector = () => {
     setShowSelector(!showSelector);

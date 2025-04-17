@@ -7,19 +7,17 @@ class ShopService:
     def get_shop_items(user_id):
         """Get all items in the shop and mark which ones the user owns"""
         try:
-            # Get all shop items
+
             shop_items = supabase_client.from_("Shop").select("*").execute()
-            
-            # Get user's purchased items
+ 
             user_purchases = supabase_client.from_("UserPurchases") \
                 .select("itemID") \
                 .eq("userID", user_id) \
                 .execute()
-            
-            # Create a set of purchased item IDs for quick lookup
+
             purchased_ids = {item["itemID"] for item in user_purchases.data}
             
-            # Mark items as purchased or not
+       
             for item in shop_items.data:
                 item["purchased"] = item["itemID"] in purchased_ids
             
@@ -33,7 +31,7 @@ class ShopService:
     def purchase_item(user_id, item_id):
         """Purchase an item from the shop"""
         try:
-            # Check if user already owns this item
+        
             existing_purchase = supabase_client.from_("UserPurchases") \
                 .select("purchaseID") \
                 .eq("userID", user_id) \
@@ -43,7 +41,6 @@ class ShopService:
             if existing_purchase.data:
                 return {"error": "You already own this item"}, 400
             
-            # Get item price
             item = supabase_client.from_("Shop") \
                 .select("*") \
                 .eq("itemID", item_id) \
@@ -53,8 +50,7 @@ class ShopService:
                 return {"error": "Item not found"}, 404
                 
             item_cost = item.data[0]["pointCost"]
-            
-            # Get user's current points
+   
             user = supabase_client.from_("User") \
                 .select("points") \
                 .eq("userID", user_id) \
@@ -64,16 +60,10 @@ class ShopService:
                 return {"error": "User not found"}, 404
                 
             user_points = user.data[0]["points"]
-            
-            # Check if user has enough points
+
             if user_points < item_cost:
                 return {"error": "Not enough points"}, 400
                 
-            # Start a transaction
-            # Note: Supabase JS client doesn't have direct transaction support
-            # so we'll do our best with separate operations
-            
-            # Deduct points from user
             update_points = supabase_client.from_("User") \
                 .update({"points": user_points - item_cost}) \
                 .eq("userID", user_id) \
@@ -81,8 +71,7 @@ class ShopService:
                 
             if not update_points.data:
                 return {"error": "Failed to update points"}, 500
-                
-            # Add purchase record
+
             purchase = supabase_client.from_("UserPurchases") \
                 .insert({
                     "userID": user_id,
@@ -92,7 +81,7 @@ class ShopService:
                 .execute()
                 
             if not purchase.data:
-                # Try to rollback points deduction
+
                 supabase_client.from_("User") \
                     .update({"points": user_points}) \
                     .eq("userID", user_id) \
@@ -113,7 +102,6 @@ class ShopService:
     def get_user_purchases(user_id):
         """Get all items purchased by the user"""
         try:
-            # Join UserPurchases with Shop to get item details
             purchases = supabase_client.from_("UserPurchases") \
                 .select("*, Shop(*)") \
                 .eq("userID", user_id) \

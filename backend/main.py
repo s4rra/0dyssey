@@ -7,6 +7,7 @@ from routes.subunit_route import subunit_bp
 from routes.mission_route import mission_bp 
 from routes.bookmark_route import bookmark_bp
 from routes.shop_route import shop_bp
+from routes.objectives_route import objective_bp
 # from routes.performance_route import performance_bp
 #starting up flask app, registers routes and enables CORS
 app = Flask(__name__)
@@ -20,6 +21,7 @@ app.register_blueprint(subunit_bp, url_prefix="/api")
 app.register_blueprint(mission_bp, url_prefix="/api")   
 app.register_blueprint(bookmark_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/api")
+app.register_blueprint(objective_bp, url_prefix="/api")
 
 
 if __name__ == "__main__":

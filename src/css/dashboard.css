@@ -23,8 +23,7 @@
 .profile-info {
   width: 300px; /* Match calendar width */
 }
-/* User profile section styling */
-/* .user-profile-section {
+.user-profile-section {
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -50,4 +49,4 @@
   flex-wrap: wrap;
   gap: 20px;
   margin-top: 20px;
-} */
+}

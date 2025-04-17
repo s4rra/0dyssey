@@ -122,28 +122,34 @@ class UserService:
     def get_profile_pictures(user_id=None):
         """Get available profile pictures with availability status for a user."""
         try:
-            # Get all profile pictures
             all_pictures = supabase_client.from_("ProfilePictures").select("*").execute()
-            
-            # If no user_id is provided, return all pictures without availability info
             if user_id is None:
                 return all_pictures.data, 200
-                
-            # Get user's purchased profile pictures from shop
             user_purchases = supabase_client.from_("UserPurchases") \
                 .select("Shop!inner(relatedID)") \
                 .eq("userID", user_id) \
                 .eq("Shop.itemType", "profile_picture") \
                 .execute()
-            
-            # Extract purchased profile picture IDs
             purchased_picture_ids = {item["Shop"]["relatedID"] for item in user_purchases.data}
-            
-            # Mark pictures as available or locked
             for picture in all_pictures.data:
                 picture["available"] = picture["pictureID"] in purchased_picture_ids
             
             return all_pictures.data, 200
         except Exception as e:
             print(f"Error fetching profile pictures: {e}")
+            return {"error": str(e)}, 500
+
+    @staticmethod
+    def update_profile_picture(user_id, picture_id):
+        try:
+            response = supabase_client.from_("User").update({
+                "profilePicture": picture_id
+            }).eq("userID", user_id).execute()
+
+            if not response.data:
+                return {"error": "Failed to update profile picture"}, 404
+
+            return {"message": "Profile picture updated successfully"}, 200
+        except Exception as e:
+            print(f"Error updating profile picture: {e}")
             return {"error": str(e)}, 500
