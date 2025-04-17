@@ -8,9 +8,14 @@ const SubUnit = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [completionLoading, setCompletionLoading] = useState(false);
   const navigate = useNavigate();
+  
   const API_URL = `http://127.0.0.1:8080/api/subunit/${subUnitId}`;
   const BOOKMARK_API_URL = `http://127.0.0.1:8080/api/bookmark/${subUnitId}`;
+  const PROGRESS_API_URL = `http://127.0.0.1:8080/api/progress/${subUnitId}`;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -20,19 +25,29 @@ const SubUnit = () => {
       return;
     }
 
-    // Fetch subunit content
+    // Fetch subunit content and check if it's unlocked
     setLoading(true);
     fetch(API_URL, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 403) {
+          throw new Error("This lesson is locked. Please complete previous lessons first.");
+        }
+        return res.json();
+      })
       .then((data) => {
         console.log("Fetched subunit content:", data);
         setSubUnitContent(data);
+        setIsUnlocked(true);
         setLoading(false);
       })
       .catch((error) => {
         console.error("Error fetching subunit content:", error);
+        if (error.message.includes("locked")) {
+          alert(error.message);
+          navigate("/courses");
+        }
         setLoading(false);
       });
 
@@ -52,7 +67,19 @@ const SubUnit = () => {
       .catch((error) => {
         console.error("Error checking bookmark status:", error);
       });
-  }, [subUnitId, navigate, API_URL]);
+      
+    // Check if current subunit is completed
+    fetch(PROGRESS_API_URL, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setIsCompleted(data.completed || false);
+      })
+      .catch((error) => {
+        console.error("Error checking completion status:", error);
+      });
+  }, [subUnitId, navigate, API_URL, PROGRESS_API_URL]);
 
   const handleBackClick = (e) => {
     e.preventDefault();
@@ -95,6 +122,42 @@ const SubUnit = () => {
       setBookmarkLoading(false);
     }
   };
+  
+  const markAsCompleted = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in first.");
+      navigate("/login");
+      return;
+    }
+    
+    setCompletionLoading(true);
+    try {
+      const response = await fetch(PROGRESS_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ completed: true }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setIsCompleted(true);
+        // Show a popup with points earned
+        alert(`Congratulations! You've completed this lesson and earned ${data.pointsAwarded} points!`);
+      } else {
+        throw new Error(data.error || "Failed to mark lesson as completed");
+      }
+    } catch (error) {
+      console.error("Error marking lesson as completed:", error);
+      alert(error.message || "Failed to mark lesson as completed. Please try again.");
+    } finally {
+      setCompletionLoading(false);
+    }
+  };
 
     if (loading) {
       return (
@@ -130,13 +193,31 @@ const SubUnit = () => {
           ← Back to Courses
         </button>
         
-        <button
-          onClick={toggleBookmark}
-          disabled={bookmarkLoading}
-          className={`bookmark-btn ${isBookmarked ? "bookmarked" : ""}`}
-        >
-          {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
-        </button>
+        <div className="subunit-actions">
+          <button
+            onClick={toggleBookmark}
+            disabled={bookmarkLoading}
+            className={`bookmark-btn ${isBookmarked ? "bookmarked" : ""}`}
+          >
+            {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
+          </button>
+          
+          {isUnlocked && !isCompleted && (
+            <button
+              onClick={markAsCompleted}
+              disabled={completionLoading}
+              className="complete-btn"
+            >
+              {completionLoading ? "Saving..." : "Mark as Completed"}
+            </button>
+          )}
+          
+          {isCompleted && (
+            <span className="completed-badge">
+              ✓ Completed
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="lesson-header">

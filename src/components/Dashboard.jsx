@@ -1,6 +1,6 @@
 import "../css/dashboard.css";
 import "../css/calendar.css";
-import "../css/ProfilePicture.css";
+import "../css/objectives.css";
 import Calendar from "react-calendar";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

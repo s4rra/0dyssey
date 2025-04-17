@@ -1,0 +1,87 @@
+/* missions.css */
+.missions-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .missions-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .missions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .mission-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .mission-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mission-card.completed-correct {
+    border-color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.05);
+  }
+  
+  .mission-card.completed-incorrect {
+    border-color: #F44336;
+    background-color: rgba(244, 67, 54, 0.05);
+  }
+  
+  .mission-question {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  
+  .mission-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+  }
+  
+  .mission-points {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .mission-status {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .mission-status.correct {
+    color: #4CAF50;
+  }
+  
+  .mission-status.incorrect {
+    color: #F44336;
+  }
+  
+  .mission-status.pending {
+    color: #2196F3;
+  }
+  
+  .error-message {
+    color: #F44336;
+    text-align: center;
+    margin: 20px 0;
+  }
