@@ -1,3 +1,4 @@
+// Dashboard.jsx
 import "../css/dashboard.css";
 import "../css/calendar.css";
 import "../css/objectives.css";
@@ -33,8 +34,10 @@ ChartJS.register(
 );
 
 const API_PROFILE = "http://127.0.0.1:8080/api/user-profile2";
-const API_FEEDBACK = (unitId) => `http://127.0.0.1:8080/api/performance/unit/${unitId}`;
-const API_HISTORY = (subunitId) => `http://127.0.0.1:8080/api/performance/history/${subunitId}`;
+const API_FEEDBACK = (unitId) =>
+  `http://127.0.0.1:8080/api/performance/unit/${unitId}`;
+const API_HISTORY = (subunitId) =>
+  `http://127.0.0.1:8080/api/performance/history/${subunitId}`;
 const API_SKILL_UPDATE = "http://127.0.0.1:8080/api/performance/skill-level";
 
 function Dashboard() {
@@ -134,10 +137,11 @@ function Dashboard() {
     return date.toLocaleDateString();
   };
 
-  const isStreakDay = (d) => {
+  const isStreakDay = (dateToCheck) => {
     if (!userData?.lastLogin) return false;
-    const date = new Date(d);
-    date.setHours(0, 0, 0, 0);
+
+    const checkDate = new Date(dateToCheck);
+    checkDate.setHours(0, 0, 0, 0);
 
     const lastLogin = new Date(userData.lastLogin);
     lastLogin.setHours(0, 0, 0, 0);
@@ -145,17 +149,25 @@ function Dashboard() {
     const startDate = new Date(lastLogin);
     startDate.setDate(startDate.getDate() - (userData.streakLength - 1));
 
-    return date >= startDate && date <= lastLogin;
+    return checkDate >= startDate && checkDate <= lastLogin;
   };
 
   const tileClassName = ({ date, view }) => {
     if (view !== "month") return "";
-    const isCurrent = userData?.lastLogin && date.getTime() === userData.lastLogin.setHours(0, 0, 0, 0);
-    return isStreakDay(date)
-      ? isCurrent
+
+    const tileDate = new Date(date);
+    tileDate.setHours(0, 0, 0, 0);
+
+    const lastLoginDate = new Date(userData?.lastLogin);
+    lastLoginDate.setHours(0, 0, 0, 0);
+
+    if (isStreakDay(tileDate)) {
+      return tileDate.getTime() === lastLoginDate.getTime()
         ? "streak-day current-streak-day"
-        : "streak-day"
-      : "";
+        : "streak-day";
+    }
+
+    return "";
   };
 
   const handlePictureChange = (pic) => {
@@ -232,18 +244,19 @@ function Dashboard() {
     <div className="dashboard-page">
       <h2 className="dashboard-heading">Welcome {userData.username}!</h2>
 
+      {/* Keep original style/structure of Profile Picture & Calendar */}
       <div className="cards-container">
-        <div className="profile-card">
+        <div className="card profile-card">
           <ProfilePicture
-            currentPictureId={userData.profilePicture}
             onPictureSelect={handlePictureChange}
+            currentPictureId={userData.profilePicture}
           />
         </div>
 
-        <div className="calendar-card">
+        <div className="card calendar-card">
           <Calendar
-            value={date}
             onChange={setDate}
+            value={date}
             tileClassName={tileClassName}
           />
         </div>
