@@ -5,8 +5,9 @@ from services.user_service import *
 #service class
 class Questions:
     @staticmethod
-    def fetch_questions_by_type(subunit_id, question_type_id, limit):
+    def fetch_questions_by_type(subunit_id, question_type_id, limit, user):
         try:
+            skill_level_id = user["chosenSkillLevel"]
             fields = "questionID, questionText, correctAnswer, options, questionTypeID, constraints, skilllevel, avgTimeSeconds"
             response = (
                 supabase_client.table("Question")
@@ -14,6 +15,7 @@ class Questions:
                 .eq("lessonID", subunit_id)
                 .eq("questionTypeID", question_type_id)
                 .eq("generated", True)
+                .eq("skilllevel", skill_level_id)
                 .order("created_at", desc=True)
                 .limit(limit)
                 .execute()
@@ -63,7 +65,7 @@ class Questions:
                 }
             questions = []
             for q_type, limit in type_limits.items():
-                questions.extend(Questions.fetch_questions_by_type(subunit_id, q_type, limit))
+                questions.extend(Questions.fetch_questions_by_type(subunit_id, q_type, limit, user))
 
             if not questions:
                 return {

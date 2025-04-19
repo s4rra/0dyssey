@@ -3,9 +3,9 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  overflow-y: auto;
-  height: 100%;
+  width: 100%;
 }
+
 
 /* === GENERAL CARD LAYOUT === */
 .cards-container {
@@ -25,6 +25,13 @@
   min-width: 280px;
 }
 
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
 /* === TEXT HEADINGS === */
 .dashboard-heading {
   font-size: 2rem;
@@ -39,15 +46,7 @@
   color: #1f2937;
 }
 
-/* === CARD HEADER === */
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-/* === ICON STYLING === */
+/* === ICONS === */
 .card-icon,
 .objective-icon {
   width: 1.25rem;
@@ -55,12 +54,171 @@
   color: #10b981;
 }
 
-/* === OBJECTIVES === */
+/* === PROFILE === */
+.profile-card img {
+  border-radius: 50%;
+}
+
+/* === CALENDAR=== */
+.react-calendar {
+  width: 60%;
+  max-width: 60%;
+  background: white;
+  border: none;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  line-height: 1.125em;
+  aspect-ratio: 1/1;
+  padding: 10px;
+}
+
+.react-calendar__navigation {
+  display: flex;
+  height: 44px;
+  margin-bottom: 1em;
+}
+
+.react-calendar__navigation button {
+  min-width: 44px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: #f5f5f5;
+  border-radius: 6px;
+}
+
+.react-calendar__navigation__label {
+  flex-grow: 1 !important;
+  text-align: left;
+  padding-left: 12px;
+  font-weight: 600;
+}
+
+.react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  padding: 0.5em;
+}
+
+.react-calendar__tile {
+  aspect-ratio: 1/1;
+  padding: 0;
+  text-align: center;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background-color: #f5f5f5;
+}
+
+.react-calendar__tile--now {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.react-calendar__tile--active {
+  background: #51b44b;
+  color: white;
+  font-weight: 600;
+}
+
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #b3b3b3;
+}
+
+.streak-day {
+  background-color: rgba(124, 202, 120, 0.644) !important;
+}
+
+.current-streak-day {
+  background-color: rgba(29, 145, 23, 0.993) !important;
+}
+
+/* === OBJECTIVES=== */
 .objective-item {
   display: flex;
-  align-items: start;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.objective-name {
+  font-weight: 500;
+  color: #444;
+}
+
+.completed .objective-name {
+  text-decoration: line-through;
+  color: #777;
+  opacity: 0.7;
+}
+
+.checkmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #4caf50;
+  color: white;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.complete-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.complete-button:hover {
+  background-color: #2980b9;
+}
+
+.points-badge {
+  background-color: #f8d775;
+  color: #946c00;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.objectives-loading,
+.objectives-error,
+.no-objectives {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.objectives-error {
+  color: #e74c3c;
 }
 
 /* === ACTIVITY LOG === */
@@ -122,15 +280,6 @@
 
 .confirm-button:hover {
   background-color: #059669;
-}
-
-button {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-button:hover {
-  opacity: 0.95;
 }
 
 /* === RESPONSIVE === */

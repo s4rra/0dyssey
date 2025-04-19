@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from services.performance_service import PerformanceService
 from services.user_service import UserService
 from utils.auth import verify_token
+from config.settings import supabase_client
 
 performance_bp = Blueprint("performance_bp", __name__)
 
@@ -85,11 +86,13 @@ def analyze_unit_performance(unit_id):
             return jsonify(user[0]), user[1]
 
         user_id = user["id"]
+
+        # Fetch user's profile
         user_profile, status = UserService.get_user_profile(user)
         if status != 200:
             return jsonify(user_profile), status
 
-        skill_level = user_profile["chosenSkillLevel"]
+        skill_level = user_profile.get("chosenSkillLevel", "beginner")
 
         service = PerformanceService(user_id)
         result = service.model_feedback(unit_id, skill_level)
@@ -99,12 +102,13 @@ def analyze_unit_performance(unit_id):
 
         return jsonify({
             "message": "AI feedback generated successfully",
-            "feedback": result.get("feedback")
+            "unitFeedback": result.get("feedback"),
+            "subunitFeedback": result.get("subunitFeedback")
         }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+ 
 #############
 @performance_bp.route("/performance/tags", methods=["GET"])
 def get_tag_performance():
@@ -130,10 +134,43 @@ def get_dashboard_summary():
             return jsonify(user[0]), user[1]
 
         user_id = user["id"]
+        
+        # Get user's skill level
+        user_profile, status = UserService.get_user_profile(user)
+        if status != 200:
+            return jsonify(user_profile), status
+            
+        skill_level = user_profile["chosenSkillLevel"]
+        
         service = PerformanceService(user_id)
-        dashboard_data = service.get_summary()
+        dashboard_data = service.get_summary(skill_level)
 
         return jsonify(dashboard_data), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@performance_bp.route("/performance/unit-feedback/<int:unit_id>", methods=["GET"])
+def get_unit_feedback(unit_id):
+    try:
+        user = verify_token()
+        if isinstance(user, tuple):
+            return jsonify(user[0]), user[1]
+
+        user_id = user["id"]
+
+        feedback = supabase_client.table("unitPerformance") \
+            .select("*") \
+            .eq("userID", user_id) \
+            .eq("unitID", unit_id) \
+            .order("created_at", desc=True) \
+            .limit(1) \
+            .execute()
+
+        if not feedback.data:
+            return jsonify({"error": "No unit-level feedback found"}), 404
+
+        return jsonify(feedback.data[0]), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

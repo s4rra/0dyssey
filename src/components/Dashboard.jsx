@@ -1,19 +1,19 @@
-// Dashboard.jsx
 import "../css/dashboard.css";
-import "../css/calendar.css";
-import "../css/objectives.css";
 import Calendar from "react-calendar";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ProfilePicture from "./ProfilePicture";
 import { Radar } from "react-chartjs-2";
+
+import ProfilePicture from "./ProfilePicture";
+import Objectives from "./Objectives";
+
 import {
-  CheckCircle2,
   BookOpen,
   Clock,
   MessageSquare,
   ListChecks,
 } from "lucide-react";
+
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -42,10 +42,25 @@ const API_SKILL_UPDATE = "http://127.0.0.1:8080/api/performance/skill-level";
 
 function Dashboard() {
   const [date, setDate] = useState(new Date());
-  const [userData, setUserData] = useState(null);
-  const [feedbackData, setFeedbackData] = useState(null);
+  const [feedbackData, setFeedbackData] = useState({
+    aiSummary: "",
+    feedbackPrompt: "",
+    levelSuggestion: null,
+    tagInsights: [],
+    subunitFeedback: [],
+  });
+
   const [activityLog, setActivityLog] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState({
+    streakLength: 0,
+    lastLogin: null,
+    profilePicture: null,
+    username: "Student",
+    currentUnit: 1,
+    currentSubUnit: null,
+    points: 0,
+  });
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -75,6 +90,7 @@ function Dashboard() {
         username: data.userName || "Student",
         currentUnit: data.currentUnit || 1,
         currentSubUnit: data.currentSubUnit || null,
+        points: data.points || 0,
       };
 
       setUserData(profile);
@@ -101,7 +117,23 @@ function Dashboard() {
       });
 
       const result = await res.json();
-      if (result.feedback) setFeedbackData(result.feedback);
+      const feedback = result.feedback || {};
+      const subunitFeedback = result.subunitFeedback || [];
+
+      const tagInsights = feedback.tagPerformance
+        ? Object.entries(feedback.tagPerformance).map(([tag, data]) => ({
+            tag,
+            score: data.percentage || 0,
+          }))
+        : [];
+
+      setFeedbackData({
+        aiSummary: feedback.aiSummary || "",
+        feedbackPrompt: feedback.feedbackPrompt || "",
+        levelSuggestion: feedback.levelSuggestion || null,
+        tagInsights,
+        subunitFeedback,
+      });
     } catch (err) {
       console.error("Failed to fetch feedback:", err);
     }
@@ -154,24 +186,29 @@ function Dashboard() {
 
   const tileClassName = ({ date, view }) => {
     if (view !== "month") return "";
-
     const tileDate = new Date(date);
     tileDate.setHours(0, 0, 0, 0);
-
     const lastLoginDate = new Date(userData?.lastLogin);
     lastLoginDate.setHours(0, 0, 0, 0);
-
     if (isStreakDay(tileDate)) {
       return tileDate.getTime() === lastLoginDate.getTime()
         ? "streak-day current-streak-day"
         : "streak-day";
     }
-
     return "";
   };
 
   const handlePictureChange = (pic) => {
     setUserData((prev) => ({ ...prev, profilePicture: pic.pictureID }));
+  };
+
+  const handlePointsUpdate = (pointsAwarded) => {
+    if (pointsAwarded > 0) {
+      setUserData((prev) => ({
+        ...prev,
+        points: prev.points + pointsAwarded,
+      }));
+    }
   };
 
   const confirmLevelSuggestion = async () => {
@@ -214,7 +251,6 @@ function Dashboard() {
       },
     },
     plugins: { legend: { display: false } },
-    events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
     interaction: {
       mode: "nearest",
       axis: "x",
@@ -244,43 +280,39 @@ function Dashboard() {
     <div className="dashboard-page">
       <h2 className="dashboard-heading">Welcome {userData.username}!</h2>
 
-      {/* Keep original style/structure of Profile Picture & Calendar */}
       <div className="cards-container">
-        <div className="card profile-card">
+        <div>
           <ProfilePicture
             onPictureSelect={handlePictureChange}
             currentPictureId={userData.profilePicture}
           />
         </div>
 
-        <div className="card calendar-card">
+        <div>
           <Calendar
             onChange={setDate}
             value={date}
             tileClassName={tileClassName}
           />
         </div>
+
+        <div className="card points-card">
+          <h3>Your Points</h3>
+          <p className="points-value">{userData.points}</p>
+        </div>
       </div>
 
       <div className="cards-container">
-        <div className="card">
+        <div className="card objectives-card">
           <div className="card-header">
             <h3>Objectives</h3>
             <ListChecks className="card-icon" />
           </div>
-          <ul>
-            {feedbackData?.aiSummary
-              ?.split(". ")
-              .slice(0, 3)
-              .map((obj, i) => (
-                <li key={i} className="objective-item">
-                  <CheckCircle2 className="objective-icon" />
-                  <span>{obj}</span>
-                </li>
-              ))}
-          </ul>
+          <Objectives onPointsEarned={handlePointsUpdate} />
         </div>
+      </div>
 
+      <div className="cards-container">
         <div className="card">
           <div className="card-header">
             <h3>Activity Log</h3>
@@ -316,7 +348,7 @@ function Dashboard() {
       <div className="cards-container">
         <div className="card">
           <h3 className="section-title">Progress Chart</h3>
-          {feedbackData?.tagInsights.length > 0 ? (
+          {feedbackData?.tagInsights?.length > 0 ? (
             <Radar data={radarData} options={radarOptions} />
           ) : (
             <p>No chart data yet</p>
@@ -330,9 +362,24 @@ function Dashboard() {
           </div>
           <p className="note-text">{feedbackData?.aiSummary}</p>
           <p className="suggestion-text">{feedbackData?.feedbackPrompt}</p>
-          <button className="confirm-button" onClick={confirmLevelSuggestion}>
-            Ok!
-          </button>
+
+          {feedbackData?.subunitFeedback.length > 0 && (
+            <div className="subunit-feedback">
+              <h4>Subunit Insights</h4>
+              {feedbackData.subunitFeedback.map((fb, idx) => (
+                <div key={idx} className="subunit-item">
+                  <p><strong>{fb.subUnitDescription}</strong></p>
+                  <p>{fb.aiSummary}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {feedbackData?.levelSuggestion && (
+            <button className="confirm-button" onClick={confirmLevelSuggestion}>
+              Ok!
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -566,7 +566,7 @@ class Prompt:
                 response_mime_type="application/json",
                 response_schema=genai.types.Schema(
                                 type = genai.types.Type.OBJECT,
-                                required = ["levelSuggestion", "aiSummary", "feedbackPrompt"],
+                                required = ["levelSuggestion", "aiSummary", "feedbackPrompt","tagInsights"],
                                 properties = {
                                     "levelSuggestion": genai.types.Schema(
                                         type = genai.types.Type.INTEGER,
@@ -578,7 +578,7 @@ class Prompt:
                                     ),
                                     "feedbackPrompt": genai.types.Schema(
                                         type = genai.types.Type.STRING,
-                                        description = "message to show the user as a popup when a level change is suggested",
+                                        description = "teacher message to show the user as a popup when a level change is suggested",
                                     ),
                                     "tagInsights": genai.types.Schema(
                                         type = genai.types.Type.ARRAY,
@@ -588,34 +588,50 @@ class Prompt:
                                             properties = {
                                                 "tag": genai.types.Schema(
                                                     type = genai.types.Type.STRING,
-                                                    description = "Name of the top 7 tags. top tag=high percentage and high total"
+                                                    description = "Name of the top 5 tags. top tag=high percentage and high total"
                                                 ),
-                                                "score": genai.types.Schema(
+                                                "percentage": genai.types.Schema(
                                                     type = genai.types.Type.NUMBER,
-                                                    description = "percentage of the top 7 tags. top tag=high percentage and high total"
+                                                    description = "percentage of the top 5 tags. top tag=high percentage and high total"
                                                 )
                                             },
-                                            required = ["tag", "score"]
+                                            required = ["tag", "percentage"]
                                         )
                                     )
 
                                 },
                             ),
                 system_instruction=[
-                    types.Part.from_text(text="""You are an python teacher checking learners' progress. earned age 10-17 
-                            Based on subunit-level stats, do:
-                            1. aiSummary (example: "keep up the good work! we suggest you to...")
-                            2. Suggest level number. 
-                            3. Give popup message to user if level change is needed, feedbackPrompt. (example: "do you want to change to level 2?", example: "we think you are ready for level 3", example: we suggest you to stay at level 1)
-                            4. tagInsights, select from tagPerformance top 7 tags. topTag == highest percentage AND highest total
-                            
-                            When evaluating performance subunits(call them lessons):
-                                - Look at correct vs total answers ratio
-                                - Consider time spent vs average time
-                                - Review tag performance to identify strength/weakness areas
-                                - Analyze progress across multiple subunits
-                                - Consider current skill level when making recommendations
-                                - Analyze tagPerformance to identify specific topic weaknesses
+                    types.Part.from_text(text="""You are a Python teacher reviewing the progress of students aged 10–17.
+
+                                Based on their lesson-level performance (subunits), generate the following:
+
+                                aiSummary: A motivational message with personalized guidance.
+                                Example: “Great job! We recommend moving to the next level for more challenge.”
+
+                                levelSuggestion: Suggest a new skill level as a number (1, 2, or 3).
+
+                                feedbackPrompt: A popup-style message if a level change is recommended.
+                                Examples: “Do you want to change to level 2?”, “We think you’re ready for level 3.”, “We suggest you stay at level 1.”
+
+                                tagInsights: Pick the top 7 tags from tagPerformance.
+                                Prioritize:
+
+                                Tags with highest correctness percentage
+
+                                Tags with highest total attempts
+
+                                When analyzing performance, consider:
+
+                                Correct answers vs. total questions
+
+                                Time taken compared to average solving time
+
+                                Trends across multiple lessons (subunits)
+
+                                The user’s current skill level
+
+                                Tag-level performance to highlight strengths and weaknesses
                             """),
                 ],
             )
