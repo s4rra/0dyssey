@@ -1,19 +1,22 @@
 import "../css/dashboard.css";
-import Calendar from "react-calendar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
-import { Radar } from "react-chartjs-2";
-
 import ProfilePicture from "./ProfilePicture";
-import Objectives from "./Objectives";
 
 import {
   BookOpen,
   Clock,
   MessageSquare,
   ListChecks,
+  Loader
 } from "lucide-react";
 
+// Lazy load components
+const Calendar = lazy(() => import("react-calendar"));
+const Objectives = lazy(() => import("./Objectives"));
+const Radar = lazy(() => import("react-chartjs-2").then(module => ({ default: module.Radar })));
+
+// Chart.js registration can be moved to a separate file or lazy-loaded too
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -34,24 +37,19 @@ ChartJS.register(
 );
 
 const API_PROFILE = "http://127.0.0.1:8080/api/user-profile2";
-const API_FEEDBACK = (unitId) =>
-  `http://127.0.0.1:8080/api/performance/unit/${unitId}`;
+const API_DASHBOARD = "http://127.0.0.1:8080/api/performance/dashboard";
 const API_HISTORY = (subunitId) =>
   `http://127.0.0.1:8080/api/performance/history/${subunitId}`;
+const API_TAGS = "http://127.0.0.1:8080/api/performance/tags";
+const API_UNIT_FEEDBACK = (unitId) =>
+  `http://127.0.0.1:8080/api/performance/unit-feedback/${unitId}`;
 const API_SKILL_UPDATE = "http://127.0.0.1:8080/api/performance/skill-level";
+
+// Timeout for data fetching in milliseconds
+const FETCH_TIMEOUT = 8000;
 
 function Dashboard() {
   const [date, setDate] = useState(new Date());
-  const [feedbackData, setFeedbackData] = useState({
-    aiSummary: "",
-    feedbackPrompt: "",
-    levelSuggestion: null,
-    tagInsights: [],
-    subunitFeedback: [],
-  });
-
-  const [activityLog, setActivityLog] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({
     streakLength: 0,
     lastLogin: null,
@@ -61,6 +59,19 @@ function Dashboard() {
     currentSubUnit: null,
     points: 0,
   });
+  
+  // Individual loading states
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
+  const [tagsLoading, setTagsLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+
+  // Data states
+  const [feedbackData, setFeedbackData] = useState(null);
+  const [activityLog, setActivityLog] = useState([]);
+  const [tagPerformance, setTagPerformance] = useState({});
+  const [loadErrors, setLoadErrors] = useState({});
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -75,11 +86,35 @@ function Dashboard() {
     fetchUserData();
   }, []);
 
-  const fetchUserData = async () => {
+  const fetchWithTimeout = async (promise, timeoutMs, errorMessage) => {
+    let timeoutId;
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(errorMessage || "Request timed out"));
+      }, timeoutMs);
+    });
+
     try {
-      const res = await fetch(API_PROFILE, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const result = await Promise.race([promise, timeoutPromise]);
+      clearTimeout(timeoutId);
+      return result;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  };
+
+  const fetchUserData = async () => {
+    // Start with fetching the user profile
+    try {
+      const res = await fetchWithTimeout(
+        fetch(API_PROFILE, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        FETCH_TIMEOUT,
+        "Profile data loading timed out"
+      );
 
       const data = await res.json();
 
@@ -94,56 +129,112 @@ function Dashboard() {
       };
 
       setUserData(profile);
+      setProfileLoading(false);
 
-      await fetchFeedback(profile.currentUnit);
+      // Now fetch all other data in parallel
+      fetchFeedback(profile.currentUnit);
+      fetchTagPerformance();
+      fetchDashboardSummary();
       if (profile.currentSubUnit) {
-        await fetchActivity(profile.currentSubUnit);
+        fetchActivity(profile.currentSubUnit);
+      } else {
+        setActivityLoading(false);
+        setLoadErrors(prev => ({ ...prev, activity: "No current subunit available" }));
       }
     } catch (err) {
       console.error("Failed to fetch user data:", err);
-    } finally {
-      setLoading(false);
+      setProfileLoading(false);
+      setLoadErrors(prev => ({ ...prev, profile: err.message }));
     }
   };
 
   const fetchFeedback = async (unitId) => {
     try {
-      const res = await fetch(API_FEEDBACK(unitId), {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await fetchWithTimeout(
+        fetch(API_UNIT_FEEDBACK(unitId), {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        FETCH_TIMEOUT,
+        "Feedback data loading timed out"
+      );
 
-      const result = await res.json();
-      const feedback = result.feedback || {};
-      const subunitFeedback = result.subunitFeedback || [];
-
-      const tagInsights = feedback.tagPerformance
-        ? Object.entries(feedback.tagPerformance).map(([tag, data]) => ({
-            tag,
-            score: data.percentage || 0,
-          }))
-        : [];
-
-      setFeedbackData({
-        aiSummary: feedback.aiSummary || "",
-        feedbackPrompt: feedback.feedbackPrompt || "",
-        levelSuggestion: feedback.levelSuggestion || null,
-        tagInsights,
-        subunitFeedback,
-      });
+      if (!res.ok) {
+        if (res.status !== 404) {
+          throw new Error(`Error ${res.status}: ${await res.text()}`);
+        }
+        setLoadErrors(prev => ({ ...prev, feedback: "No feedback available" }));
+      } else {
+        const result = await res.json();
+        setFeedbackData(result);
+      }
     } catch (err) {
       console.error("Failed to fetch feedback:", err);
+      setLoadErrors(prev => ({ ...prev, feedback: err.message }));
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const fetchTagPerformance = async () => {
+    try {
+      const res = await fetchWithTimeout(
+        fetch(API_TAGS, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        FETCH_TIMEOUT,
+        "Tag performance data loading timed out"
+      );
+
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${await res.text()}`);
+      }
+
+      const data = await res.json();
+      setTagPerformance(data);
+    } catch (err) {
+      console.error("Failed to fetch tag performance:", err);
+      setLoadErrors(prev => ({ ...prev, tags: err.message }));
+    } finally {
+      setTagsLoading(false);
+    }
+  };
+
+  const fetchDashboardSummary = async () => {
+    try {
+      const res = await fetchWithTimeout(
+        fetch(API_DASHBOARD, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        FETCH_TIMEOUT,
+        "Dashboard summary loading timed out"
+      );
+
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${await res.text()}`);
+      }
+      
+      // Handle dashboard data as needed
+    } catch (err) {
+      console.error("Failed to fetch dashboard summary:", err);
+      setLoadErrors(prev => ({ ...prev, dashboard: err.message }));
+    } finally {
+      setDashboardLoading(false);
     }
   };
 
   const fetchActivity = async (subunitId) => {
     try {
-      const res = await fetch(API_HISTORY(subunitId), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetchWithTimeout(
+        fetch(API_HISTORY(subunitId), {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        FETCH_TIMEOUT,
+        "Activity history loading timed out"
+      );
+
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${await res.text()}`);
+      }
 
       const data = await res.json();
       const log = data.map((entry) => ({
@@ -156,6 +247,9 @@ function Dashboard() {
       setActivityLog(log);
     } catch (err) {
       console.error("Failed to fetch activity:", err);
+      setLoadErrors(prev => ({ ...prev, activity: err.message }));
+    } finally {
+      setActivityLoading(false);
     }
   };
 
@@ -186,15 +280,19 @@ function Dashboard() {
 
   const tileClassName = ({ date, view }) => {
     if (view !== "month") return "";
+
     const tileDate = new Date(date);
     tileDate.setHours(0, 0, 0, 0);
+
     const lastLoginDate = new Date(userData?.lastLogin);
     lastLoginDate.setHours(0, 0, 0, 0);
+
     if (isStreakDay(tileDate)) {
       return tileDate.getTime() === lastLoginDate.getTime()
         ? "streak-day current-streak-day"
         : "streak-day";
     }
+
     return "";
   };
 
@@ -212,6 +310,8 @@ function Dashboard() {
   };
 
   const confirmLevelSuggestion = async () => {
+    if (!feedbackData || !feedbackData.levelSuggestion) return;
+    
     try {
       const res = await fetch(API_SKILL_UPDATE, {
         method: "POST",
@@ -222,19 +322,34 @@ function Dashboard() {
         body: JSON.stringify({ skillLevel: feedbackData.levelSuggestion }),
       });
 
-      const result = await res.json();
-      if (!result.success) console.warn("Skill update failed", result);
+      if (!res.ok) {
+        console.error("Skill update failed:", await res.text());
+        return;
+      }
+
+      // Refresh data after successful update
+      fetchUserData();
     } catch (err) {
       console.error("Skill update error:", err);
     }
   };
 
+  const prepareTagInsights = () => {
+    // Convert tag performance data to format needed for radar chart
+    if (!Object.keys(tagPerformance).length) return [];
+    
+    return Object.keys(tagPerformance).map(tag => ({
+      tag,
+      score: tagPerformance[tag].percentage || 0
+    }));
+  };
+
   const radarData = {
-    labels: feedbackData?.tagInsights.map((t) => t.tag) || [],
+    labels: prepareTagInsights().map(t => t.tag),
     datasets: [
       {
         label: "Progress",
-        data: feedbackData?.tagInsights.map((t) => t.score) || [],
+        data: prepareTagInsights().map(t => t.score),
         backgroundColor: "rgba(34,197,94,0.2)",
         borderColor: "rgba(34,197,94,1)",
         borderWidth: 2,
@@ -265,8 +380,8 @@ function Dashboard() {
 
     activityLog.forEach((log) => {
       const [c, t] = log.score.split("/").map(Number);
-      correct += c;
-      totalQ += t;
+      correct += c || 0;
+      totalQ += t || 0;
       minutes += parseInt(log.time) || 0;
     });
 
@@ -274,7 +389,25 @@ function Dashboard() {
     return `This week you answered ${totalQ} questions with ${acc}% accuracy over ${minutes}m`;
   };
 
-  if (loading || !userData) return <p>Loading...</p>;
+  // Loading fallback component
+  const LoadingFallback = () => (
+    <div className="loading-fallback">
+      <Loader className="animate-spin" size={24} />
+      <p>Loading...</p>
+    </div>
+  );
+
+  // Error component
+  const ErrorMessage = ({ message }) => (
+    <div className="error-message">
+      <p>{message || "No data available"}</p>
+    </div>
+  );
+
+  // Only show loading screen for the initial profile data
+  if (profileLoading) {
+    return <div className="full-page-loading"><LoadingFallback /></div>;
+  }
 
   return (
     <div className="dashboard-page">
@@ -282,21 +415,23 @@ function Dashboard() {
 
       <div className="cards-container">
         <div>
-          <ProfilePicture
+          <ProfilePicture 
             onPictureSelect={handlePictureChange}
             currentPictureId={userData.profilePicture}
           />
         </div>
 
         <div>
-          <Calendar
-            onChange={setDate}
-            value={date}
-            tileClassName={tileClassName}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <Calendar 
+              onChange={setDate}
+              value={date}
+              tileClassName={tileClassName}
+            />
+          </Suspense>
         </div>
-
-        <div className="card points-card">
+         
+        <div className="card points-card"> 
           <h3>Your Points</h3>
           <p className="points-value">{userData.points}</p>
         </div>
@@ -308,7 +443,9 @@ function Dashboard() {
             <h3>Objectives</h3>
             <ListChecks className="card-icon" />
           </div>
-          <Objectives onPointsEarned={handlePointsUpdate} />
+          <Suspense fallback={<LoadingFallback />}>
+            <Objectives onPointsEarned={handlePointsUpdate} />
+          </Suspense>
         </div>
       </div>
 
@@ -318,7 +455,9 @@ function Dashboard() {
             <h3>Activity Log</h3>
             <BookOpen className="card-icon" />
           </div>
-          {activityLog.length > 0 ? (
+          {activityLoading ? (
+            <LoadingFallback />
+          ) : activityLog.length > 0 ? (
             activityLog.map((a, i) => (
               <div key={i} className="log-row">
                 <div>
@@ -332,7 +471,7 @@ function Dashboard() {
               </div>
             ))
           ) : (
-            <p>No activity yet.</p>
+            <ErrorMessage message={loadErrors.activity || "No activity yet."} />
           )}
         </div>
 
@@ -341,17 +480,25 @@ function Dashboard() {
             <h3>Weekly Stats</h3>
             <Clock className="card-icon" />
           </div>
-          <p>{calcStats()}</p>
+          {activityLoading ? (
+            <LoadingFallback />
+          ) : (
+            <p>{calcStats()}</p>
+          )}
         </div>
       </div>
 
       <div className="cards-container">
         <div className="card">
           <h3 className="section-title">Progress Chart</h3>
-          {feedbackData?.tagInsights?.length > 0 ? (
-            <Radar data={radarData} options={radarOptions} />
+          {tagsLoading ? (
+            <LoadingFallback />
+          ) : prepareTagInsights().length > 0 ? (
+            <Suspense fallback={<LoadingFallback />}>
+              <Radar data={radarData} options={radarOptions} />
+            </Suspense>
           ) : (
-            <p>No chart data yet</p>
+            <ErrorMessage message={loadErrors.tags || "No chart data yet"} />
           )}
         </div>
 
@@ -360,25 +507,20 @@ function Dashboard() {
             <h3>Quick Note</h3>
             <MessageSquare className="card-icon" />
           </div>
-          <p className="note-text">{feedbackData?.aiSummary}</p>
-          <p className="suggestion-text">{feedbackData?.feedbackPrompt}</p>
-
-          {feedbackData?.subunitFeedback.length > 0 && (
-            <div className="subunit-feedback">
-              <h4>Subunit Insights</h4>
-              {feedbackData.subunitFeedback.map((fb, idx) => (
-                <div key={idx} className="subunit-item">
-                  <p><strong>{fb.subUnitDescription}</strong></p>
-                  <p>{fb.aiSummary}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {feedbackData?.levelSuggestion && (
-            <button className="confirm-button" onClick={confirmLevelSuggestion}>
-              Ok!
-            </button>
+          {feedbackLoading ? (
+            <LoadingFallback />
+          ) : (
+            <>
+              <p className="note-text">{feedbackData?.aiSummary || "No feedback available yet."}</p>
+              {feedbackData?.feedbackPrompt && (
+                <p className="suggestion-text">{feedbackData.feedbackPrompt}</p>
+              )}
+              {feedbackData?.levelSuggestion && (
+                <button className="confirm-button" onClick={confirmLevelSuggestion}>
+                  Ok!
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

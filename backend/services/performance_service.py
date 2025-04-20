@@ -6,7 +6,7 @@ from config.settings import supabase_client
 class PerformanceService:
     def __init__(self, user_id):
         self.user_id = user_id
-        
+
     def update_performance(self, unit_id, subunit_id, answers):
         try:
             total_questions = len(answers)
@@ -77,7 +77,7 @@ class PerformanceService:
     def get_performance_for_unit(self, unit_id):
         try:
             subunits = supabase_client.table("RefSubUnit") \
-                .select("subUnitID, subUnitDescription") \
+                .select("subUnitID") \
                 .eq("unitID", unit_id) \
                 .execute()
 
@@ -87,11 +87,8 @@ class PerformanceService:
             performance_data = []
             for subunit in subunits.data:
                 subunit_id = subunit["subUnitID"]
-                description = subunit["subUnitDescription"]
                 history = self.get_performance_history(subunit_id)
-                for perf in history:
-                    perf["subUnitDescription"] = description
-                    performance_data.append(perf)
+                performance_data.extend(history)
 
             return performance_data
 
@@ -139,7 +136,7 @@ class PerformanceService:
                     .select("*") \
                     .eq("userID", self.user_id) \
                     .order("updatedAt", desc=True) \
-                    .limit(100) \
+                    .limit(5) \
                     .execute().data or []
 
             subunit_map = {}
@@ -152,14 +149,7 @@ class PerformanceService:
             feedback_items = []
 
             for subunit_id, history in subunit_map.items():
-                info = supabase_client.table("RefSubUnit") \
-                    .select("subUnitDescription") \
-                    .eq("subUnitID", subunit_id) \
-                    .single() \
-                    .execute()
-
                 prompt_input = {
-                    "subUnitDescription": info.data.get("subUnitDescription", ""),
                     "currentSkillLevel": skill_level,
                     "performanceHistory": history
                 }
@@ -179,7 +169,6 @@ class PerformanceService:
 
                 feedback_items.append({
                     "subUnitID": subunit_id,
-                    "subUnitDescription": info.data.get("subUnitDescription", ""),
                     "aiSummary": feedback.get("aiSummary", "")
                 })
 
@@ -203,7 +192,6 @@ class PerformanceService:
 
             tag_data = self.get_tag_performance()
 
-            # Generate unit-level feedback
             prompt_input = {
                 "unitDescription": unit_description,
                 "currentSkillLevel": skill_level,
@@ -217,7 +205,6 @@ class PerformanceService:
             if "error" in ai_feedback:
                 return {"success": False, "error": "AI feedback failed"}
 
-            # Store in new table
             supabase_client.table("unitPerformance") \
                 .insert({
                     "userID": self.user_id,
@@ -239,5 +226,3 @@ class PerformanceService:
 
         except Exception as e:
             return {"success": False, "error": str(e)}
-        
-        
