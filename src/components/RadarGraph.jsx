@@ -1,5 +1,4 @@
 import React, { lazy, Suspense } from "react";
-import RadarChart from "./RadarChart";
 import {
   Chart as ChartJS,
   RadialLinearScale,
