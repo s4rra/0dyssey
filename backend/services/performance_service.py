@@ -262,3 +262,30 @@ class PerformanceService:
         except Exception as e:
             return {"success": False, "error": str(e)}
     
+    def get_subunit_objectives(self, unit_id):
+        try:
+            subunits_resp = supabase_client.table("RefSubUnit") \
+                .select("subUnitID, subUnitName") \
+                .eq("unitID", unit_id) \
+                .execute()
+
+            subunits = subunits_resp.data or []
+
+            objectives = []
+            for sub in subunits:
+                sub_id = sub["subUnitID"]
+                sub_name = sub.get("subUnitName", f"Subunit {sub_id}")
+                history = self.get_performance_history(sub_id, limit=1)
+                is_done = len(history) > 0
+                ai_summary = history[0].get("aiSummary", "") if is_done else ""
+                objectives.append({
+                    "subUnitID": sub_id,
+                    "subUnitName": sub_name,
+                    "completed": is_done,
+                    "aiSummary": ai_summary
+                })
+
+            return {"success": True, "objectives": objectives}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}

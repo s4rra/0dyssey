@@ -46,6 +46,24 @@ def submit_performance(unit_id, subunit_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@performance_bp.route("/performance/objectives/<int:unit_id>", methods=["GET"])
+def get_objectives(unit_id):
+    try:
+        user = verify_token()
+        if isinstance(user, tuple):
+            return jsonify(user[0]), user[1]
+
+        user_id = user["id"]
+        service = PerformanceService(user_id)
+        result = service.get_subunit_objectives(unit_id)
+
+        if not result.get("success"):
+            return jsonify({"error": result.get("error", "Failed to fetch objectives")}), 500
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Skill level update
 @performance_bp.route("/performance/skill-level", methods=["POST"])
