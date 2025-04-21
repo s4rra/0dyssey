@@ -201,10 +201,29 @@ class PerformanceService:
                 .execute()
 
             unit_description = unit_info.data.get("unitDescription", "")
+
+            # 🧠 Get all user performance for the unit
             performance_data = self.get_performance_for_unit(unit_id)
             if not performance_data:
                 return {"success": False, "error": "No performance data found"}
 
+            # ✅ Smart Check: has the user completed every subunit in this unit?
+            subunits_resp = supabase_client.table("RefSubUnit") \
+                .select("subUnitID") \
+                .eq("unitID", unit_id) \
+                .execute()
+
+            expected_subunit_ids = {s["subUnitID"] for s in subunits_resp.data}
+            completed_subunit_ids = {p["subUnitID"] for p in performance_data}
+
+            if not expected_subunit_ids.issubset(completed_subunit_ids):
+                return {
+                    "success": False,
+                    "error": "User must complete all subunits before unit analysis.",
+                    "missingSubunits": list(expected_subunit_ids - completed_subunit_ids)
+                }
+
+            # 🧠 Continue with tag + AI feedback
             tag_data = self.get_tag_performance()
 
             prompt_input = {
@@ -220,6 +239,7 @@ class PerformanceService:
             if "error" in ai_feedback:
                 return {"success": False, "error": "AI feedback failed"}
 
+            # ✅ Insert unitPerformance only when complete
             supabase_client.table("unitPerformance") \
                 .insert({
                     "userID": self.user_id,
@@ -241,3 +261,4 @@ class PerformanceService:
 
         except Exception as e:
             return {"success": False, "error": str(e)}
+    
