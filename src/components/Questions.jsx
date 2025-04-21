@@ -175,7 +175,9 @@ function Questions() {
   
       const perfResult = await res.json();
   
-      if (!perfResult.success) {
+      if (perfResult.success) {
+        showNotification("Performance submitted!");
+      } else {
         console.warn("Performance submission failed. Full response:", perfResult);
       }
     } catch (err) {
@@ -224,7 +226,7 @@ function Questions() {
         >
           Next
         </button>
-        {loading && <div className="loading">Loading...</div>}
+        {loading && <div>Loading...</div>}
         {notification && (
             <div className="points-notification">
               {notification}

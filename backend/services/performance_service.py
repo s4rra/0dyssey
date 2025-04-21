@@ -61,6 +61,21 @@ class PerformanceService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def update_skill_level(self, new_level):
+            try:
+                result = supabase_client.table("User") \
+                    .update({"chosenSkillLevel": new_level}) \
+                    .eq("userID", self.user_id) \
+                    .execute()
+                if not result.data:
+                    return {"success": False, "error": "Skill level update failed"}
+                    
+                return {"success": True, "newLevel": new_level}
+                
+            except Exception as e:
+                print(f"Error updating skill level: {str(e)}")
+                return {"success": False, "error": str(e)}
+        
     def get_performance_history(self, subunit_id, limit=5):
         try:
             result = supabase_client.table("Performance") \

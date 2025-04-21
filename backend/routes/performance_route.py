@@ -102,6 +102,7 @@ def analyze_unit_performance(unit_id):
             "feedback": {
                 "aiSummary": result.get("feedback", {}).get("aiSummary", ""),
                 "feedbackPrompt": result.get("feedback", {}).get("feedbackPrompt", ""),
+                "levelSuggestion": result.get("feedback", {}).get("levelSuggestion", ),
                 "tagPerformance": result.get("feedback", {}).get("tagInsights", [])
             }
         }), 200
