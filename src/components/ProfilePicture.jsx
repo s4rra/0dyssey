@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../css/profilePicture.css";
 
-function ProfilePicture({ onPictureSelect, currentPictureId }) {
+function ProfilePicture({ onPictureSelect }) {
   const [pictures, setPictures] = useState([]);
   const [showSelector, setShowSelector] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -10,52 +10,69 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
 
   const API_URL = "http://127.0.0.1:8080/api";
 
-  // Fetch available profile pictures
   useEffect(() => {
     const fetchProfilePictures = async () => {
-      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         if (!token) {
           setError("Authentication required");
-          setLoading(false);
           return;
         }
 
         const response = await fetch(`${API_URL}/profile-pictures`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        const data = await response.json();
 
-        // Filter to only available pictures
+        const data = await response.json();
         const availablePictures = data.filter((pic) => pic.available);
         setPictures(availablePictures);
-
-        // If we have a currentPictureId, find that picture
-        if (currentPictureId) {
-          const current = data.find(
-            (pic) => pic.pictureID === currentPictureId
-          );
-          setCurrentPicture(current || null);
-        }
+        return availablePictures;
       } catch (err) {
         setError(err.message);
         console.error("Error fetching profile pictures:", err);
-      } finally {
-        setLoading(false);
+        return [];
       }
     };
 
-    fetchProfilePictures();
-  }, [currentPictureId]);
+    const fetchCurrentUserPicture = async (availablePictures) => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-  // Handle picture selection
+        const res = await fetch(`${API_URL}/user-profile2`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch user profile");
+
+        const data = await res.json();
+        const profile = Array.isArray(data) ? data[0] : data;
+
+        if (profile?.profilePicture) {
+          const pic = availablePictures.find(
+            (p) => p.pictureID === profile.profilePicture
+          );
+          if (pic) setCurrentPicture(pic);
+        }
+      } catch (err) {
+        console.error("Error fetching current user picture:", err);
+      }
+    };
+
+    const init = async () => {
+      setLoading(true);
+      const availablePictures = await fetchProfilePictures();
+      await fetchCurrentUserPicture(availablePictures);
+      setLoading(false);
+    };
+
+    init();
+  }, []);
+
   const handlePictureSelect = async (picture) => {
     try {
       const token = localStorage.getItem("token");
@@ -64,7 +81,6 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
         return;
       }
 
-      // First, update the profile picture in the database
       const updateResponse = await fetch(`${API_URL}/update-profile-picture`, {
         method: "POST",
         headers: {
@@ -81,11 +97,9 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
         );
       }
 
-      // After successfully updating, set the current picture
       setCurrentPicture(picture);
       setShowSelector(false);
 
-      // Call parent callback if provided
       if (onPictureSelect) {
         onPictureSelect(picture);
       }
@@ -94,7 +108,7 @@ function ProfilePicture({ onPictureSelect, currentPictureId }) {
       console.error("Error updating profile picture:", err);
     }
   };
-  // Toggle the picture selector
+
   const toggleSelector = () => {
     setShowSelector(!showSelector);
     setError(null);

@@ -29,8 +29,6 @@ const Dashboard = () => {
   const [updatingLvl, setUpdatingLvl] = useState(false);
   const [feedbackHandled, setFeedbackHandled] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [date, setDate] = useState(new Date());
-  const [calendarMarks, setCalendarMarks] = useState([]);
 
   useEffect(() => {
     if (!token) { nav("/login"); return; }
@@ -47,17 +45,8 @@ const Dashboard = () => {
           points: p.points ?? 0,
           unitId: p.currentUnit ?? 1,
           subUnitId: p.currentSubUnit ?? 1,
-          streak: p.streakLength ?? 0,
         };
         setUser(userInfo);
-
-        const streakDates = [];
-        for (let i = 0; i < userInfo.streak; i++) {
-          const d = new Date();
-          d.setDate(d.getDate() - i);
-          streakDates.push(d.toDateString());
-        }
-        setCalendarMarks(streakDates);
 
         await Promise.all([
           analyseLastCompletedUnit(userInfo.unitId),
@@ -162,16 +151,29 @@ const Dashboard = () => {
     <div className="dashboard-page">
       <h2 className="dashboard-heading">Welcome {user.username}!</h2>
 
-      <div className="cards-container">
-        <ProfilePicture currentPictureId={user.pictureId} />
-        <StreakCalendar calendarMarks={calendarMarks} date={date} setDate={setDate}/>
+        <div className="cards-container">
+          <div>
+            <ProfilePicture />
+          </div>
 
-        <div className="card points-card">
-          <h3>Your Points</h3>
-          <p className="points-value">{user.points}</p>
+          <div className="card calendar-card">
+            <StreakCalendar />
+          </div>
+
+          <div className="card points-card">
+            <h3>Your Points</h3>
+            <p className="points-value">{user.points}</p>
+          </div>
         </div>
-      </div>
 
+        <div>
+      <Insights
+          lessonStats={lessonStats}
+          objectives={objectives}
+          unitId={user.unitId}
+        />
+      </div>
+      
       <div className="cards-container">
         <div className="card">
           <h3 className="section-title">Progress Chart – {unitSummary?.unitName}</h3>
@@ -196,12 +198,8 @@ const Dashboard = () => {
         />
 
       </div>
-
-      <Insights
-          lessonStats={lessonStats}
-          objectives={objectives}
-          unitId={user.unitId}
-        />
+      
+      
       {errorMsg && <p className="error-text">{errorMsg}</p>}
     </div>
   );
