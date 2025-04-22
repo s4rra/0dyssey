@@ -9,6 +9,7 @@ const Signup = () => {
   const [chosenSkillLevel, setChosenSkillLevel] = useState("");
   const [skillLevels, setSkillLevels] = useState([]);
   const [error, setError] = useState("");
+  const [dob, setDob] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,23 +25,30 @@ const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
-    
+  
     try {
       const response = await fetch("http://127.0.0.1:8080/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, userName, chosenSkillLevel }),
+        body: JSON.stringify({
+          Email: email,  
+          Password: password,  
+          userName,
+          chosenSkillLevel,
+          DOB: dob
+        })
       });
       const data = await response.json();
-
+  
       if (!response.ok) throw new Error(data.error || "Signup failed");
-
-      alert("Signup successful! Please login.");
+  
+      console.log("Signup successful! Please login.");
       navigate("/login");
     } catch (error) {
       setError(error.message);
     }
   };
+  
 
   return (
     <div className="auth-container">
@@ -89,6 +97,17 @@ const Signup = () => {
             />
           </div>
 
+          <div className="form-group">
+            <label htmlFor="dob">Date of Birth</label>
+            <input
+              type="date"
+              id="dob"
+              className="form-control"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              required
+            />
+          </div>
           <div className="form-group">
             <label htmlFor="skill-level">Skill Level</label>
             <select

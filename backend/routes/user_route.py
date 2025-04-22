@@ -34,20 +34,14 @@ def get_user_profile():
     result, status_code = UserService.get_user_profile(user)
     return jsonify(result), status_code
 
-@user_bp.route("/user-profile2", methods=["GET"])
-def get_user_profile2():
-    auth_result = verify_token()
-    # If verify_token returns a tuple, it's an error response
-    if isinstance(auth_result, tuple):
-        return jsonify(auth_result[0]), auth_result[1]
-
-    user = auth_result
-    result, status_code = UserService.get_user_profile2(user)
-    return jsonify(result), status_code
-
 @user_bp.route("/profile-pictures", methods=["GET"])
 def get_profile_pictures():
-    result, status_code = UserService.get_profile_pictures()
+    auth_result = verify_token()
+    if isinstance(auth_result, tuple):
+        return jsonify(auth_result[0]), auth_result[1]
+    
+    user = auth_result
+    result, status_code = UserService.get_profile_pictures(user["id"])
     return jsonify(result), status_code
 
 

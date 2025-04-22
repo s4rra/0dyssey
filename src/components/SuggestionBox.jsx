@@ -79,7 +79,7 @@ const SuggestionBox = ({ unitId , onFeedback  }) => {
       </div>
 
       {unitLocked || !unitSummary ? (
-        <p>Keep going! Finish Unit {unitId} to get feedback.</p>
+        <p>Keep going!</p>
       
       ) : feedbackHandled ? (
         <p>Keep going! Finish Unit {unitId} for your next AI review.</p>
