@@ -75,10 +75,41 @@
     border-radius: 20px;
     cursor: pointer;
     transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+    position: relative;
+    padding-right: 24px; /* Space for potential icons */
 }
-.subunits-container button:hover {
+.subunits-container button:hover:not(.locked) {
     background: #4caf50;
     color: white;
+}
+.subunits-container button.locked {
+    border-color: #cccccc;
+    color: #999999;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+}
+.subunits-container button.completed {
+    border-color: #2196F3;
+    color: #2196F3;
+    background-color: rgba(33, 150, 243, 0.1);
+}
+.subunits-container button.completed:hover {
+    background-color: #2196F3;
+    color: white;
+}
+.lock-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+.check-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
 }
 .start-button {
     background: linear-gradient(90deg, #4caf50, #66bb6a);

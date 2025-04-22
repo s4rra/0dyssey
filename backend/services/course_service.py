@@ -4,8 +4,22 @@ class CourseService:
     @staticmethod
     def get_courses():
         try:
-            response = supabase_client.table("RefUnit").select("unitID, unitName,unitDescription, RefSubUnit(subUnitID, subUnitName)").execute()
+            # Return to original query without order clause
+            response = supabase_client.table("RefUnit").select(
+                "unitID, unitName, unitDescription, RefSubUnit(subUnitID, subUnitName)"
+            ).execute()
+            
             if response.data:
+                # Sort units by unitID if that's the desired order
+                response.data = sorted(response.data, key=lambda x: x['unitID'])
+                
+                # Then sort subunits by ID for each course
+                for course in response.data:
+                    if course.get('RefSubUnit'):
+                        course['RefSubUnit'] = sorted(
+                            course['RefSubUnit'], 
+                            key=lambda x: x['subUnitID']
+                        )
                 return response.data, 200
             else:
                 return {"error": "No courses found"}, 404

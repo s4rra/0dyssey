@@ -13,6 +13,7 @@ function Questions() {
   const [totalPoints, setTotalPoints] = useState(0);
   const [hintLoading, setHintLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [markingComplete, setMarkingComplete] = useState(false);
 
   const { unitId, subunitId } = useParams(); //get from url
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ function Questions() {
   const GENERATE_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/generate-questions`;
   const HINT_USED_URL = `http://127.0.0.1:8080/api/hint-used`;
   const PERFORMANCE_URL = `http://127.0.0.1:8080/api/performance/submit/${unitId}/${subunitId}`;
+  const MARK_COMPLETE_URL = `http://127.0.0.1:8080/api/subunits/${subunitId}/complete`;
 
   useEffect(() => {
     if (!token) {
@@ -96,12 +98,11 @@ function Questions() {
     } finally {
       setHintLoading(false);
     }
-  }
+  };
   
-
   const showNotification = (message) => {
-      setNotification(message);
-      setTimeout(() => setNotification(null), 3000);
+    setNotification(message);
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const generateMoreQuestions = async () => {
@@ -149,7 +150,7 @@ function Questions() {
 
         showNotification(`+${totalPoints} points!`);
   
-       submitPerformance(result.results);
+        submitPerformance(result.results);
       } else {
         alert("Error submitting answers");
       }
@@ -184,6 +185,31 @@ function Questions() {
     }
   };
   
+  const markSubunitComplete = async () => {
+    setMarkingComplete(true);
+    try {
+      const res = await fetch(MARK_COMPLETE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      const result = await res.json();
+      
+      if (result.message) {
+        showNotification(result.message);
+      }
+      
+      // Navigate back to courses page even if there was an error
+      navigate("/courses");
+    } catch (err) {
+      console.error("Error marking subunit as complete:", err);
+      // Navigate back to courses page even if there was an error
+      navigate("/courses");
+    }
+  };
     
   return (
     <div className="questions-container">
@@ -211,17 +237,23 @@ function Questions() {
         <button
             onClick={submitAnswers}
             className="submit-button"
+            disabled={loading || markingComplete}
           >
             {Object.keys(submissionResults).length === 0 ? 'Submit' : 'Resubmit'}
         </button>
-        <button onClick={generateMoreQuestions} className="generate-button">
+        <button 
+          onClick={generateMoreQuestions} 
+          className="generate-button"
+          disabled={loading || markingComplete}
+        >
           More Questions?
         </button>
         <button
           className="generate-button"
-          onClick={() => navigate("/courses")}
+          onClick={markSubunitComplete}
+          disabled={loading || markingComplete}
         >
-          Next
+          {markingComplete ? "Completing..." : "Next"}
         </button>
         {loading && <div>Loading...</div>}
         {notification && (
