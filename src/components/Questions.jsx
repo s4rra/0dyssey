@@ -44,7 +44,7 @@ function Questions() {
       setQuestions(data);
   
       if (data.length === 0 && result.message) {
-        setNotification(result.message);
+        showNotification(result.message);
       } else {
         const startTimes = {};
         data.forEach(q => {
@@ -73,10 +73,6 @@ function Questions() {
   };
 
   const toggleHint = async (questionId) => {
-    if (showHints[questionId]) {
-      setShowHints(prev => ({ ...prev, [questionId]: false }));
-      return;
-    }
     setHintLoading(true);
     try {
       const res = await fetch(HINT_USED_URL, {
@@ -90,9 +86,9 @@ function Questions() {
     
       if (result.success) {
         setShowHints(prev => ({ ...prev, [questionId]: true }));
-        showNotification(`-30 points for using hint. remaining: ${result.updatedPoints} points`);
+        showNotification(`Hint used! Remaining hints: ${result.updatedHints}`);
       } else {
-        showNotification(result.message || "Cannot use hint at this time");
+        showNotification(result.message || "No hints left, visit the shop!");
       }
     } catch (error) {
       console.error("Error using hint:", error);
@@ -101,6 +97,7 @@ function Questions() {
       setHintLoading(false);
     }
   }
+  
 
   const showNotification = (message) => {
       setNotification(message);
@@ -149,6 +146,8 @@ function Questions() {
         setSubmissionResults(resultsMap);
         const totalPoints = result.results.reduce((sum, r) => sum + (r.points || 0), 0);
         setTotalPoints(totalPoints);
+
+        showNotification(`+${totalPoints} points!`);
   
        submitPerformance(result.results);
       } else {
@@ -176,7 +175,7 @@ function Questions() {
       const perfResult = await res.json();
   
       if (perfResult.success) {
-        showNotification("Performance submitted!");
+        console.log("Performance submitted!");
       } else {
         console.warn("Performance submission failed. Full response:", perfResult);
       }
@@ -207,9 +206,7 @@ function Questions() {
           />
         ))}
       </div>
-      {Object.keys(submissionResults).length > 0 && (
-        <div className="points-notification">+{totalPoints} points!</div>
-      )}
+      
       <div className="action-buttons">
         <button
             onClick={submitAnswers}

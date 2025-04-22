@@ -32,27 +32,28 @@ class ScoreCalculator:
     def deduct_for_hint(user_id):
         try:
             res = supabase_client.table("User") \
-            .select("points") \
-            .eq("userID", user_id) \
-            .single() \
-            .execute()
+                .select("hints") \
+                .eq("userID", user_id) \
+                .single() \
+                .execute()
 
-            current_points = res.data["points"]
-            
-            if current_points < 29:
+            current_hints = res.data["hints"]
+
+            if current_hints <= 0:
                 return {
                     "success": False,
-                    "message": f"Not enough points to use a hint. You have {current_points} points!"
+                    "message": "no hints credit, get some hints from shop!"
                 }
 
-            new_points = current_points - 30
+            new_hints = current_hints - 1
 
             supabase_client.table("User") \
-            .update({"points": new_points}) \
-            .eq("userID", user_id) \
-            .execute()
+                .update({"hints": new_hints}) \
+                .eq("userID", user_id) \
+                .execute()
 
-            return {"success": True, "updatedPoints": new_points}
+            return {"success": True, "updatedHints": new_hints}
+
         except Exception as e:
             return {"error": str(e)}
 

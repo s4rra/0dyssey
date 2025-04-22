@@ -166,23 +166,23 @@ function QuestionRenderer({
             <strong>Feedback:</strong> {result.feedback}
           </div>
         )}
-        {result.hint && result.retry >= 3 && (
-          <div className="hint-container">
-            <button 
-              onClick={() => toggleHint(questionId)} 
-              className="hint-button"
-              disabled={hintLoading}
-            >
-              <span className="hint-symbol"></span>
-              {hintLoading ? 'Loading...' : showHints[questionId] ? 'Hide Hint!' : 'Show Hint!'}
-            </button>
-            {showHints[questionId] && (
-              <div className="hint-text">
-                <strong>Hint:</strong> {result.hint}
-              </div>
-            )}
-          </div>
-        )}
+        {result.hint && result.retry >= 3 && !showHints[questionId] && (
+  <div className="hint-container">
+    <button 
+      onClick={() => toggleHint(questionId)} 
+      className="hint-button"
+      disabled={hintLoading}
+    >
+      {hintLoading ? 'Loading...' : 'Hint'}
+    </button>
+  </div>
+)}
+{showHints[questionId] && (
+  <div className="hint-text">
+    <strong>Hint:</strong> {result.hint}
+  </div>
+)}
+
       </div>
     );
   };

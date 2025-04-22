@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 #authorization
+#checks if a request has a valid JWT
 def verify_token():
     auth_header = request.headers.get("Authorization")
 

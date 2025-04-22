@@ -46,7 +46,7 @@ class UserService:
 
     @staticmethod
     def login(email, password):
-        """Authenticate user and return access token."""
+        #Authenticate user and return access jwt
         try:
             user_response = supabase_client.from_("User") \
                 .select("userID, Password, streakLength, lastLogin") \

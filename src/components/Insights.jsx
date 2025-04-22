@@ -1,29 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BookOpen, Clock, CheckSquare, Square } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const Insights = ({ lessonStats, objectives, unitId }) => {
+
+const API_OBJECTIVES = (unitId) => `http://127.0.0.1:8080/api/performance/objectives/${unitId}`;
+
+const Insights = ({ unitId }) => {
+  const [lessonStats, setLessonStats] = useState("Loading lesson stats...");
+  const [objectives, setObjectives] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const fetchObjectives = async () => {
+      try {
+        const res = await fetch(API_OBJECTIVES(unitId), {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        setObjectives(data?.objectives ?? []);
+
+        const summaries = (data?.objectives ?? [])
+          .filter(obj => obj.completed && obj.aiSummary)
+          .map(obj => `${obj.subUnitName}: ${obj.aiSummary}`);
+
+        if (summaries.length) {
+          setLessonStats(summaries.join("\n"));
+        } else {
+          setLessonStats("No recent lesson data.");
+        }
+
+      } catch (err) {
+        setLessonStats("Unable to load lesson summaries.");
+        setObjectives([]);
+        console.error("Error fetching insights:", err);
+      }
+    };
+
+    fetchObjectives();
+  }, [unitId]);
+
   return (
     <>
-      {/* LESSON STATS */}
-      <div className="cards-container">
-        <div className="card">
-          <div className="card-header">
-            <h3>Unit {unitId} Lesson notes</h3>
-            <Clock className="card-icon" />
-          </div>
-          {lessonStats.split("\n").map((line, idx) => (
-            <div
-              key={idx}
-              className="clickable-card"
-              onClick={() => console.log(`Clicked: ${line}`)}
-            >
-              {line}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* OBJECTIVES */}
+      
       <div className="cards-container">
         <div className="card">
           <div className="card-header">
@@ -36,7 +58,7 @@ const Insights = ({ lessonStats, objectives, unitId }) => {
                 <div
                   key={idx}
                   className="clickable-card"
-                  onClick={() => console.log(`Clicked objective: ${item.subUnitName}`)}
+                  onClick={() => navigate(`/courses/subunit/${unitId}/${item.subUnitID}`)}
                 >
                   {item.completed ? (
                     <CheckSquare size={16} style={{ marginRight: "6px" }} />
@@ -51,7 +73,23 @@ const Insights = ({ lessonStats, objectives, unitId }) => {
             <p>All lessons in Unit {unitId} are done</p>
           )}
         </div>
+     
+        <div className="card">
+          <div className="card-header">
+            <h3>Unit {unitId} Lesson Notes</h3>
+            <Clock className="card-icon" />
+          </div>
+          <div className="lesson-notes-scrollable">
+  {lessonStats.split("\n").map((line, idx) => (
+    <div key={idx} className="lesson-note">
+      {line}
+    </div>
+  ))}
+</div>
+
+        </div>
       </div>
+
     </>
   );
 };

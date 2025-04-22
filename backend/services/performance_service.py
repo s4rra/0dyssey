@@ -6,7 +6,7 @@ from config.settings import supabase_client
 class PerformanceService:
     def __init__(self, user_id):
         self.user_id = user_id
-
+    #record performance for a lesson
     def update_performance(self, unit_id, subunit_id, answers):
         try:
             total_questions = len(answers)
@@ -61,6 +61,7 @@ class PerformanceService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    #update user skill level
     def update_skill_level(self, new_level):
             try:
                 result = supabase_client.table("User") \
@@ -75,7 +76,8 @@ class PerformanceService:
             except Exception as e:
                 print(f"Error updating skill level: {str(e)}")
                 return {"success": False, "error": str(e)}
-        
+     
+    #gets recent performance records for a lesson    
     def get_performance_history(self, subunit_id, limit=5):
         try:
             result = supabase_client.table("Performance") \
@@ -89,6 +91,7 @@ class PerformanceService:
         except Exception as e:
             return []
 
+    #gets recent performance records for a lesson for a unit
     def get_performance_for_unit(self, unit_id):
         try:
             subunits = supabase_client.table("RefSubUnit") \
@@ -110,15 +113,13 @@ class PerformanceService:
         except Exception as e:
             return []
 
-    def get_tag_performance(self):
+    #gets tag performance for a unit
+    def get_tag_performance(self, unit_id):
         try:
-            result = supabase_client.table("Performance") \
-                .select("tags") \
-                .eq("userID", self.user_id) \
-                .execute()
+            performance_data = self.get_performance_for_unit(unit_id)
 
             all_tags = {}
-            for entry in result.data or []:
+            for entry in performance_data:
                 for tag, value in entry.get("tags", {}).items():
                     if tag not in all_tags:
                         all_tags[tag] = {"correct": 0, "total": 0}
@@ -134,9 +135,11 @@ class PerformanceService:
                     }
 
             return tag_performance
+
         except Exception as e:
             return {}
 
+    #get ai feedback for RECENT lesson performance
     def get_summary(self, skill_level=None, performance_data=None):
         try:
             if skill_level is None:
@@ -192,6 +195,7 @@ class PerformanceService:
         except Exception as e:
             return []
 
+    # records unit performance
     def model_feedback(self, unit_id, skill_level):
         try:
             unit_info = supabase_client.table("RefUnit") \
@@ -202,12 +206,10 @@ class PerformanceService:
 
             unit_description = unit_info.data.get("unitDescription", "")
 
-            # 🧠 Get all user performance for the unit
             performance_data = self.get_performance_for_unit(unit_id)
             if not performance_data:
                 return {"success": False, "error": "No performance data found"}
 
-            # ✅ Smart Check: has the user completed every subunit in this unit?
             subunits_resp = supabase_client.table("RefSubUnit") \
                 .select("subUnitID") \
                 .eq("unitID", unit_id) \
@@ -223,8 +225,7 @@ class PerformanceService:
                     "missingSubunits": list(expected_subunit_ids - completed_subunit_ids)
                 }
 
-            # 🧠 Continue with tag + AI feedback
-            tag_data = self.get_tag_performance()
+            tag_data = self.get_tag_performance(unit_id)
 
             prompt_input = {
                 "unitDescription": unit_description,
@@ -239,17 +240,34 @@ class PerformanceService:
             if "error" in ai_feedback:
                 return {"success": False, "error": "AI feedback failed"}
 
-            # ✅ Insert unitPerformance only when complete
-            supabase_client.table("unitPerformance") \
-                .insert({
-                    "userID": self.user_id,
-                    "unitID": unit_id,
-                    "aiSummary": ai_feedback.get("aiSummary", ""),
-                    "feedbackPrompt": ai_feedback.get("feedbackPrompt", ""),
-                    "levelSuggestion": ai_feedback.get("levelSuggestion"),
-                    "tagPerformance": tag_data,
-                    "created_at": datetime.now().isoformat()
-                }).execute()
+            existing_record = supabase_client.table("unitPerformance") \
+                .select("*") \
+                .eq("userID", self.user_id) \
+                .eq("unitID", unit_id) \
+                .execute()
+                
+            performance_data_to_save = {
+                "userID": self.user_id,
+                "unitID": unit_id,
+                "aiSummary": ai_feedback.get("aiSummary", ""),
+                "feedbackPrompt": ai_feedback.get("feedbackPrompt", ""),
+                "levelSuggestion": ai_feedback.get("levelSuggestion"),
+                "tagPerformance": tag_data,
+                "created_at": datetime.now().isoformat()
+            }
+
+            if existing_record and existing_record.data and len(existing_record.data) > 0:
+                # Update existing record
+                supabase_client.table("unitPerformance") \
+                    .update(performance_data_to_save) \
+                    .eq("userID", self.user_id) \
+                    .eq("unitID", unit_id) \
+                    .execute()
+            else:
+                # Insert new record
+                supabase_client.table("unitPerformance") \
+                    .insert(performance_data_to_save) \
+                    .execute()
 
             subunit_feedback = self.get_summary(skill_level, performance_data)
 
@@ -261,7 +279,8 @@ class PerformanceService:
 
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+     
+    #returns list of lessons in a unit, and wheather they are done or not
     def get_subunit_objectives(self, unit_id):
         try:
             subunits_resp = supabase_client.table("RefSubUnit") \

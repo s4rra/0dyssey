@@ -8,12 +8,7 @@ import {Loader} from "lucide-react";
 import SuggestionBox from "./SuggestionBox";
 import RadarChart from "./RadarGraph";
 
-
 const API_PROFILE        = "http://127.0.0.1:8080/api/user-profile2";
-const API_ANALYSE_UNIT   = id => `http://127.0.0.1:8080/api/performance/unit/${id}`;
-const API_OBJECTIVES     = unitId => `http://127.0.0.1:8080/api/performance/objectives/${unitId}`;
-const API_SKILL_UPDATE   = "http://127.0.0.1:8080/api/performance/skill-level";
-
 const Dashboard = () => {
   const nav = useNavigate();
   const token = localStorage.getItem("token");
@@ -21,13 +16,7 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [profileLoad, setProfileLoad] = useState(true);
   const [tagInsights, setTagInsights] = useState([]);
-  const [unitSummary, setUnitSummary] = useState(null);
-  const [lessonStats, setLessonStats] = useState("Loading lesson stats...");
-  const [objectives, setObjectives] = useState([]);
-  const [unitLocked, setUnitLocked] = useState(false);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [updatingLvl, setUpdatingLvl] = useState(false);
-  const [feedbackHandled, setFeedbackHandled] = useState(false);
+  const [chartUnitLabel, setChartUnitLabel] = useState("");
   const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
@@ -43,16 +32,11 @@ const Dashboard = () => {
           username: p.userName ?? "Student",
           pictureId: p.profilePicture ?? null,
           points: p.points ?? 0,
+          hints: p.hints ?? 0,
           unitId: p.currentUnit ?? 1,
           subUnitId: p.currentSubUnit ?? 1,
         };
         setUser(userInfo);
-
-        await Promise.all([
-          analyseLastCompletedUnit(userInfo.unitId),
-          fetchLessonStats(userInfo.unitId, userInfo.subUnitId),
-          fetchObjectives(userInfo.unitId)
-        ]);
 
         setProfileLoad(false);
       } catch (e) {
@@ -61,83 +45,6 @@ const Dashboard = () => {
       }
     })();
   }, []);
-
-  const analyseLastCompletedUnit = async unitId => {
-    for (let i = unitId - 1; i >= 1; i--) {
-      try {
-        const res = await fetch(API_ANALYSE_UNIT(i), {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const result = await res.json();
-        if (result.success) {
-          setTagInsights(result.feedback.tagPerformance ?? []);
-          setUnitSummary({
-            summary: result.feedback.aiSummary,
-            prompt: result.feedback.feedbackPrompt,
-            levelSug: result.feedback.levelSuggestion,
-            unitName: `Unit ${i}`,
-          });
-          setUnitLocked(false);
-          setShowPrompt(!!result.feedback.feedbackPrompt);
-          return;
-        }
-      } catch {}
-    }
-    setUnitLocked(true);
-  };
-
-  const fetchLessonStats = async (unitId) => {
-    try {
-      const res = await fetch(API_OBJECTIVES(unitId), {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      const summaries = (data?.objectives ?? [])
-        .filter(obj => obj.completed && obj.aiSummary)
-        .map(obj => `${obj.subUnitName}: ${obj.aiSummary}`);
-      
-      if (summaries.length) {
-        setLessonStats(summaries.join("\n"));
-      } else {
-        setLessonStats("No recent lesson data.");
-      }
-    } catch {
-      setLessonStats("Unable to load lesson summaries.");
-    }
-  };
-  
-  const fetchObjectives = async unitId => {
-    try {
-      const res = await fetch(API_OBJECTIVES(unitId), {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setObjectives(data?.objectives ?? []);
-    } catch {
-      setObjectives([]);
-    }
-  };
-
-  const handleLevelOk = async () => {
-    if (updatingLvl) return;
-    setUpdatingLvl(true);
-    try {
-      await fetch(API_SKILL_UPDATE, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ skillLevel: unitSummary.levelSug }),
-      });
-      setShowPrompt(false);
-      setFeedbackHandled(true);
-    } catch (e) {
-      alert("Level update failed: " + e.message);
-    }
-    setUpdatingLvl(false);
-  };
 
   const Loading = () => (
     <div className="loading-fallback">
@@ -152,7 +59,7 @@ const Dashboard = () => {
       <h2 className="dashboard-heading">Welcome {user.username}!</h2>
 
         <div className="cards-container">
-          <div>
+          <div className="profile-card">
             <ProfilePicture />
           </div>
 
@@ -163,37 +70,36 @@ const Dashboard = () => {
           <div className="card points-card">
             <h3>Your Points</h3>
             <p className="points-value">{user.points}</p>
+            <h3>Hints count</h3>
+            <p className="points-value">{user.hints}</p>
           </div>
         </div>
 
         <div>
-      <Insights
-          lessonStats={lessonStats}
-          objectives={objectives}
-          unitId={user.unitId}
-        />
+        <Insights unitId={user.unitId} />
       </div>
-      
+
       <div className="cards-container">
-        <div className="card">
-          <h3 className="section-title">Progress Chart – {unitSummary?.unitName}</h3>
-          {unitLocked || !tagInsights.length ? (
-            <p>Finish Unit {user.unitId} to unlock your chart.</p>
-          ) : (
-            <RadarChart tagInsights={tagInsights} />
-          )}
-        </div>
+      <div className="card">
+  <h3 className="section-title">
+    {tagInsights.length ? `Progress Chart – ${chartUnitLabel}` : "Progress Chart"}
+  </h3>
+
+  {!tagInsights.length ? (
+    <div className="loading-fallback">
+       <p>Analyzing last completed unit…</p>
+    </div>
+  ) : (
+    <RadarChart tagInsights={tagInsights} />
+  )}
+</div>
+
 
         <SuggestionBox
           unitId={user.unitId}
-          unitSummary={unitSummary}
-          unitLocked={unitLocked}
-          feedbackHandled={feedbackHandled}
-          showPrompt={showPrompt}
-          handleLevelOk={handleLevelOk}
-          onDismissPrompt={() => {
-            setShowPrompt(false);
-            setFeedbackHandled(true);
+          onFeedback={({ tagInsights, unitLabel }) => {
+            setTagInsights(tagInsights);
+            setChartUnitLabel(unitLabel);
           }}
         />
 

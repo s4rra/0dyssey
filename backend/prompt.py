@@ -588,11 +588,11 @@ class Prompt:
                                             properties = {
                                                 "tag": genai.types.Schema(
                                                     type = genai.types.Type.STRING,
-                                                    description = "Name of the top 5 tags. top tag=high percentage and high total"
+                                                    description = "Name of the top 7 tags. top tag= high total"
                                                 ),
                                                 "percentage": genai.types.Schema(
                                                     type = genai.types.Type.NUMBER,
-                                                    description = "percentage of the top 5 tags. top tag=high percentage and high total"
+                                                    description = "percentage of the top 7 tags. top tag= high total"
                                                 )
                                             },
                                             required = ["tag", "percentage"]
@@ -610,7 +610,7 @@ class Prompt:
                             - levelSuggestion: Suggest a new skill level as a number (1, 2, or 3).
                             - feedbackPrompt: A popup-style message if a level change is recommended.
                             Examples: “Do you want to change to level 2?”, “I think you’re ready for level 3.”, “I suggest you stay at level 1.”
-                            - tagInsights: Pick the top 5 tags from tagPerformance.
+                            - tagInsights: Pick the top 7 tags from tagPerformance.
                             Prioritize:
                             - Tags with highest correctness percentage
                             - Tags with highest total attempts
