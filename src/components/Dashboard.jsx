@@ -8,7 +8,7 @@ import {Loader} from "lucide-react";
 import SuggestionBox from "./SuggestionBox";
 import RadarChart from "./RadarGraph";
 
-const API_PROFILE        = "http://127.0.0.1:8080/api/user-profile2";
+const API_PROFILE        = "http://127.0.0.1:8080/api/user-profile";
 const Dashboard = () => {
   const nav = useNavigate();
   const token = localStorage.getItem("token");

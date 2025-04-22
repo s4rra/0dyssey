@@ -43,7 +43,7 @@ function ProfilePicture({ onPictureSelect }) {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch(`${API_URL}/user-profile2`, {
+        const res = await fetch(`${API_URL}/user-profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
