@@ -13,7 +13,6 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 class UserService:
     @staticmethod
     def signup(email, password, username, chosen_skill_level, dob):
-        """Register a new user account."""
         try:
             existing_user = supabase_client.from_("User") \
                 .select("userID") \
@@ -30,9 +29,7 @@ class UserService:
                 "Password": generate_password_hash(password),
                 "userName": username,
                 "chosenSkillLevel": chosen_skill_level,
-                "DOB": dob,
-                "Points": 0,
-                "streakLength": 0
+                "DOB": dob
             }).execute()
 
             if not response.data:
