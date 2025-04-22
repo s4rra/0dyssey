@@ -7,7 +7,6 @@ from routes.subunit_route import subunit_bp
 from routes.answer_route import answer_bp
 from routes.performance_route import performance_bp
 #starting up flask app, registers routes and enables CORS
-from routes.mission_route import mission_bp 
 from routes.bookmark_route import bookmark_bp
 from routes.shop_route import shop_bp
 # from routes.performance_route import performance_bp
@@ -22,7 +21,6 @@ app.register_blueprint(course_bp, url_prefix="/api")
 app.register_blueprint(subunit_bp, url_prefix="/api")
 app.register_blueprint(answer_bp, url_prefix="/api")
 app.register_blueprint(performance_bp, url_prefix="/api") 
-app.register_blueprint(mission_bp, url_prefix="/api")   
 app.register_blueprint(bookmark_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/api")
 
