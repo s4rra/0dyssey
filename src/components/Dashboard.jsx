@@ -87,7 +87,8 @@ const Dashboard = () => {
 
   {!tagInsights.length ? (
     <div className="loading-fallback">
-       <p>Analyzing last completed unit…</p>
+       <p>complete a unit
+       </p>
     </div>
   ) : (
     <RadarChart tagInsights={tagInsights} />
