@@ -141,6 +141,10 @@ class UserService:
     ###########
     
     @staticmethod
+    def log_out():
+        return
+    
+    @staticmethod
     def get_profile_pictures(user_id=None):
         """Get available profile pictures with availability status for a user."""
         try:

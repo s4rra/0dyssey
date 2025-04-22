@@ -93,8 +93,6 @@ const Dashboard = () => {
     <RadarChart tagInsights={tagInsights} />
   )}
 </div>
-
-
         <SuggestionBox
           unitId={user.unitId}
           onFeedback={({ tagInsights, unitLabel }) => {
