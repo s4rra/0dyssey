@@ -78,7 +78,7 @@ class Prompt:
                 system_instruction=[
                     types.Part.from_text(text="""Act as an energetic and engaging teacher creating 3 unique Python multiple-choice questions in a JSON array,
                                          each question must follow the schema exactly. Respond with a JSON array only. Make questions educational, age-appropriate (10–17),
-                                         fun, and directly tied to the provided subunit description! Avoid repeating the same question with slight rewording
+                                         fun, and directly tied to the provided subunit description! Avoid repeating the same question with slight rewording.
                                          A skill level: based on this user input: beginner = never coded, intermediate = some coding knowledge, advanced = knows other programming languages
                                          """),],
             )
@@ -330,10 +330,10 @@ class Prompt:
                                         - Be clearly tied to the provided subunit description
                                         - Include stricktly 2 to 3 blanks in the code or question to be filled in (use `_____`), or include blanks at the end of the question if the question asks to "Drag the correct blocks into the blanks"
                                         - Be age-appropriate (10–17), fun, and educational
-                                        - Include a `question` (context with blanks), `correct_answer` (ordered list), and `options` (correct answers + distractors)
+                                        - Include a `question` (context with blanks), `correct_answer` (ordered list that fill the blanks in the question), and `options` (correct answers + distractors)
                                         - Follow the JSON schema exactly
 
-                                        Do NOT repeat the same pattern, and don’t go beyond the subunit scope.
+                                        Do NOT go beyond the subunit description scope.
                                         A skill level: based on this user input: beginner = never coded, intermediate = some coding knowledge, advanced = knows other programming languages
                                         """),
                 ],
@@ -418,8 +418,8 @@ class Prompt:
                             hint: Provide a deeper-thinking challenge (e.g. “now, what if the input was a float instead of an integer?”).
                             If the solution is INCORRECT:
                             user answer doesnt apply the "constraints".
-                            user answer doesnt ful fill the question text or needs.
-                            feedback: State only what the user current code does (e.g. “thats not quite right, your code does ...”) Socratic-style, no.
+                            user answer doesnt full fill the question text or needs.
+                            feedback: State only what the user current code does (e.g. “thats not quite right, your code does ...”) Socratic-style, no suggestions.
                             hint: Use a Socratic-style question that nudges the student to figure out what went wrong, without revealing the solution (e.g. “How do we usually get input from the user?”).
 
                             NEVER:
@@ -427,8 +427,8 @@ class Prompt:
                             Do NOT reveal the correct answer.
                             Do NOT praise incorrect answers.
                             
-                            based on time taken to solve in seconds compared to avgTimeSeconds , give score out of 10 in points
-                            If no answer is submitted for a question, assume it's incorrect and provide feedback and a hint that explain the correct approach or concept behind the question
+                            based on time taken to solve in seconds compared to avgTimeSeconds , give the student answer score out of 10 in points
+                            If no answer is submitted for a question, assume it's incorrect and provide feedback and a hint that explain the question.
                             """),
                             ],
                         )
@@ -500,7 +500,7 @@ class Prompt:
                         ),
                         "points": genai.types.Schema(
                             type = genai.types.Type.INTEGER,
-                            description = "Score out of 8 based on how well the student's code meets the question's requirements"
+                            description = "Score out of 7 based on how well the student's answer meets the question's requirements"
                         ),
                     },
                 ),
@@ -514,14 +514,14 @@ class Prompt:
                         - Accept alternate correct phrasing or synonyms if they make sense.
                         - Use the expected answers (correct_answer) as a guide, not a strict match.
                         - If the student answer is logically correct, mark it as correct (correct!, great work!).
-                        - user answer is incorrect doesnt full fill the question text or needs.
+                        - user answer is incorrect when it doesnt full fill the question text or needs.
                         - for hints, use a short Socratic-style hint (that encourages thinking without giving the answer).
                         - Keep all feedback short, Socratic-style and focused, (not quite right, your code does...), Do NOT give away the correct answer, do not give tips or suggestions
                         
-                        based on time taken to solve in seconds compared to avgTimeSeconds , give score out of 7 in points
+                        based on time taken to solve in seconds compared to avgTimeSeconds , give student answer a score out of 7 in points
                         
                         Your response MUST follow this exact JSON schema
-                        If no answer is submitted for a question, assume it's incorrect and provide feedback and a hint that explain the correct approach or concept behind the question"""),
+                        If no answer is submitted for a question, assume it's incorrect and provide feedback and a hint that explain the question"""),
                                 ],
                             )
 
@@ -601,28 +601,27 @@ class Prompt:
 
                                 },
                             ),
-                system_instruction=[
-                    types.Part.from_text(text="""
-                                         You are a Python teacher reviewing the progress of students aged 10–17.
-                            Based on their lesson-level performance (subunits), generate the following:
-                            - aiSummary: A **short**, motivational message (1–3 sentences max) with personalized guidance. Write as if you are giving quick feedback to a student. Avoid long paragraphs or overly generic advice.
-                            Example: “Great job with logical operators! You’re ready to try more advanced problems.”
-                            - levelSuggestion: Suggest a new skill level as a number (1, 2, or 3).
-                            - feedbackPrompt: A popup-style message if a level change is recommended.
-                            Examples: “Do you want to change to level 2?”, “I think you’re ready for level 3.”, “I suggest you stay at level 1.”
-                            - tagInsights: Pick the top 7 tags from tagPerformance.
-                            Prioritize:
-                            - Tags with highest correctness percentage
-                            - Tags with highest total attempts
-                            When analyzing performance, consider:
-                            - Correct answers vs. total questions
-                            - Time taken compared to average solving time
-                            - Trends across multiple lessons (subunits)
-                            - The user’s current skill level
-                            - Tag-level performance to highlight strengths and weaknesses
-                            """),
-                ],
-            )
+                            system_instruction=[
+                                types.Part.from_text(text="""
+                                                    You are a Python teacher reviewing the progress of students aged 10–17.
+                                        Based on their lesson-level performance (subunits), generate the following:
+                                        - aiSummary: A short, motivational message (1–2 sentences max) with personalized guidance. Write as if you are giving quick feedback to a student. Avoid long paragraphs or overly generic advice.
+                                        Example: “Great job with for loops! You’re ready to ...”
+                                        - levelSuggestion: Suggest a new skill level as a number (1, 2, or 3).
+                                        - feedbackPrompt: A popup-style message if a level change is recommended.
+                                        Examples: “Do you want to change to level 2?”, “I think you’re ready for level 3.”, “I suggest you stay at level 1.”...etc
+                                        - tagInsights: Pick the top 7 tags from tagPerformance.
+                                        Prioritize:
+                                        - Tags with highest total attempts
+                                        When analyzing performance, consider:
+                                        - Correct answers vs. total questions
+                                        - Time taken compared to average solving time
+                                        - Trends across multiple lessons (subunits)
+                                        - The user’s current skill level
+                                        - Tag-level performance to highlight strengths and weaknesses
+                                        """),
+                            ],
+                        )
 
             response = ""
             for chunk in client.models.generate_content_stream(
