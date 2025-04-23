@@ -54,4 +54,4 @@ def update_profile_picture():
     user = auth_result
     data = request.json
     result, status_code = UserService.update_profile_picture(user["id"], data.get("pictureID"))
-    return jsonify(result), status_code
+    return jsonify(result), status_code 

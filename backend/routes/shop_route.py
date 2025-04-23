@@ -1,4 +1,3 @@
-# shop_route.py
 from flask import Blueprint, request, jsonify
 from services.shop_service import ShopService
 from utils.auth import verify_token
@@ -37,4 +36,27 @@ def get_user_purchases():
     
     user = auth_result
     result, status_code = ShopService.get_user_purchases(user["id"])
+    return jsonify(result), status_code
+
+@shop_bp.route("/shop/hint-inventory", methods=["GET"])
+def get_hint_inventory():
+    """Get all available hints in the user's inventory"""
+    auth_result = verify_token()
+    if isinstance(auth_result, tuple):
+        return jsonify(auth_result[0]), auth_result[1]
+    
+    user = auth_result
+    result, status_code = ShopService.get_user_hint_inventory(user["id"])
+    return jsonify(result), status_code
+
+@shop_bp.route("/shop/use-hint", methods=["POST"])
+def use_hint():
+    """Mark a hint as used in the user's inventory"""
+    auth_result = verify_token()
+    if isinstance(auth_result, tuple):
+        return jsonify(auth_result[0]), auth_result[1]
+    
+    user = auth_result
+    data = request.json
+    result, status_code = ShopService.use_hint(user["id"], data.get("inventoryID"))
     return jsonify(result), status_code
