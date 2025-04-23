@@ -98,31 +98,29 @@ class UserService:
 
     @staticmethod
     def get_user_profile(user):
-        """Fetch user's profile including profile picture."""
+        """Fetch user's profile including profile picture and associated unit info."""
         try:
             user_id = user["id"]
-            print("profile got user id")
-            response = (
-                supabase_client
-                .table("User")
-                .select("*, RefUnit(unitDescription), RefSubUnit(subUnitDescription)")
-                .eq("userID", user_id)
-                .single()  #one row only
-                .execute()
-            )
-            if not response.data:
-                return {"error": "User not found"}, 404
-
-            return response.data, 200  #no need for [0] after .single()
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-    ###########
-    @staticmethod
-    def get_user_profile2(user):
-        try:
-            user_id = user["id"]  # extract userID from session
-
+            print(f"Getting profile for user ID: {user_id}")
+            
+            # Try to get comprehensive profile info first including unit references
+            try:
+                response = (
+                    supabase_client
+                    .table("User")
+                    .select("*, RefUnit(unitDescription), RefSubUnit(subUnitDescription), ProfilePictures!inner(pictureID, imagePath, displayName)")
+                    .eq("userID", user_id)
+                    .single()
+                    .execute()
+                )
+                
+                if response.data:
+                    return response.data, 200
+            except Exception as e:
+                print(f"Could not fetch full profile data: {e}")
+                # Fall back to basic profile if the comprehensive query fails
+            
+            # Fallback to basic profile info with just profile pictures
             response = supabase_client.from_("User") \
                 .select("*, ProfilePictures!inner(pictureID, imagePath, displayName)") \
                 .eq("userID", user_id) \
@@ -131,11 +129,11 @@ class UserService:
             if not response.data:
                 return {"error": "User not found"}, 404
 
-            return response.data, 200  #no need for [0] after .single()
+            return response.data[0], 200
 
         except Exception as e:
+            print(f"Error fetching user profile: {e}")
             return {"error": str(e)}, 500
-    ###########
     
     @staticmethod
     def log_out():
