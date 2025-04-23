@@ -8,7 +8,7 @@ import {Loader} from "lucide-react";
 import SuggestionBox from "./SuggestionBox";
 import RadarChart from "./RadarGraph";
 
-const API_PROFILE        = "http://127.0.0.1:8080/api/user-profile";
+const API_PROFILE = "http://127.0.0.1:8080/api/user-profile";
 const Dashboard = () => {
   const nav = useNavigate();
   const token = localStorage.getItem("token");
@@ -58,42 +58,46 @@ const Dashboard = () => {
     <div className="dashboard-page">
       <h2 className="dashboard-heading">Welcome {user.username}!</h2>
 
-        <div className="cards-container">
+      <div className="cards-container">
+        {/* Left column with profile and calendar stacked vertically */}
+        <div className="profile-calendar-column">
           <div className="profile-card">
-            <ProfilePicture />
+            <ProfilePicture userPoints={user.points} userHints={user.hints} />
           </div>
-
-          <div className="card calendar-card">
+          <div className="calendar-card card">
             <StreakCalendar />
-          </div>
-
-          <div className="card points-card">
-            <h3>Your Points</h3>
-            <p className="points-value">{user.points}</p>
-            <h3>Hints count</h3>
-            <p className="points-value">{user.hints}</p>
           </div>
         </div>
 
-        <div>
-        <Insights unitId={user.unitId} />
+        {/* Combined Progress Chart and Insights Card */}
+        <div className="card objectives-card">
+          {/* Progress Chart Section */}
+          <div className="chart-section">
+            <h3 className="section-title">
+              {tagInsights.length ? `Progress Chart – ${chartUnitLabel}` : "Progress Chart"}
+            </h3>
+
+            {!tagInsights.length ? (
+              <div className="loading-fallback">
+                <p>Complete a unit to see your progress</p>
+              </div>
+            ) : (
+              <RadarChart tagInsights={tagInsights} />
+            )}
+          </div>
+          
+          {/* Divider between chart and insights */}
+          <div className="section-divider"></div>
+          
+          {/* Insights Section */}
+          <div className="insights-section">
+            <h3 className="section-title">Insights</h3>
+            <Insights unitId={user.unitId} />
+          </div>
+        </div>
       </div>
 
       <div className="cards-container">
-      <div className="card">
-  <h3 className="section-title">
-    {tagInsights.length ? `Progress Chart – ${chartUnitLabel}` : "Progress Chart"}
-  </h3>
-
-  {!tagInsights.length ? (
-    <div className="loading-fallback">
-       <p>complete a unit
-       </p>
-    </div>
-  ) : (
-    <RadarChart tagInsights={tagInsights} />
-  )}
-</div>
         <SuggestionBox
           unitId={user.unitId}
           onFeedback={({ tagInsights, unitLabel }) => {
@@ -101,9 +105,7 @@ const Dashboard = () => {
             setChartUnitLabel(unitLabel);
           }}
         />
-
       </div>
-      
       
       {errorMsg && <p className="error-text">{errorMsg}</p>}
     </div>

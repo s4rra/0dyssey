@@ -8,155 +8,207 @@
 }
   
 .current-picture {
-    /* Polaroid-style formatting */
-    width: 300px;
-    height: 300px;
-    padding: 15px 15px 40px 15px;
-    background-color: white;
-    border: 1px solid #f0f0f0;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    /* Use 3D transform for sharper rendering */
-    transform: rotate(-2deg) translateZ(0);
-    /* Force hardware acceleration */
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-  
+  /* Polaroid-style formatting */
+  width: 300px;
+  height: 340px; /* Increased height to accommodate points */
+  padding: 15px 15px 60px 15px; /* Increased bottom padding for stats */
+  background-color: white;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  /* Use 3D transform for sharper rendering */
+  transform: rotate(-2deg) translateZ(0);
+  /* Force hardware acceleration */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  position: relative; /* For positioning child elements */
+}
 
-  .current-picture:hover {
-    /* Maintain Z-index during hover */
-    transform: rotate(0deg) scale(1.05) translateZ(0);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  }
-  
+.current-picture:hover {
+  /* Maintain Z-index during hover */
+  transform: rotate(0deg) scale(1.05) translateZ(0);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
 
-  .profile-image-container {
-    width: 100%;
-    height: calc(100% - 20px);
-    overflow: hidden;
-    position: relative;
-    /* Prevent sub-pixel rendering */
-    transform: translateZ(0);
-  }
+.profile-image-container {
+  width: 100%;
+  height: calc(100% - 60px); /* Adjusted to account for stats */
+  overflow: hidden;
+  position: relative;
+  /* Prevent sub-pixel rendering */
+  transform: translateZ(0);
+}
 
-  .profile-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    /* Crisp edges during rotation */
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-    /* Smooth scaling */
-    -ms-interpolation-mode: nearest-neighbor;
-  }
-  
-  .polaroid-caption {
-    position: absolute;
-    bottom: 15px; /* Increased to match larger padding */
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-family: 'Courier New', monospace;
-    font-size: 16px; /* Slightly larger font */
-    color: #333;
-  }
-  
-  .no-picture {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    color: #666;
-    font-size: 14px;
-    text-align: center;
-    background-color: #f9f9f9;
-  }
-  
-  .picture-selector {
-    position: absolute;
-    top: 360px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 16px;
-    z-index: 100;
-    width: 320px;
-  }
-  
-  .pictures-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 10px;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-  
-  .picture-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .picture-item:hover {
-    background-color: #f5f5f5;
-    transform: scale(1.05);
-  }
-  
-  .picture-item.selected {
-    background-color: #e3f2fd;
-    border: 1px solid #2196f3;
-  }
-  
-  .selector-image {
-    /* Mini polaroid effect for selection grid */
-    width: 60px;
-    height: 60px;
-    padding: 3px 3px 8px 3px;
-    background-color: white;
-    border: 1px solid #eee;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  }
-  
-  .picture-name {
-    margin-top: 4px;
-    font-size: 12px;
-    text-align: center;
-    font-family: 'Courier New', monospace;
-  }
-  
-  .close-selector {
-    margin-top: 12px;
-    padding: 6px 12px;
-    background-color: #f5f5f5;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .close-selector:hover {
-    background-color: #e0e0e0;
-  }
-  
-  .error-message {
-    color: #d32f2f;
-    font-size: 12px;
-    margin-top: 8px;
-  }
-  
-  .profile-picture.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100px;
-    font-style: italic;
-    color: #666;
-  }
+.profile-image {
+  width: 100%;
+  height: calc(100% - 40px); /* Leave space for stats at bottom */
+  object-fit: cover;
+  /* Crisp edges during rotation */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Smooth scaling */
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
+/* User stats styling */
+.user-stats {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Courier New', monospace;
+  color: #333;
+  border-top: 1px dashed #ccc;
+  padding-top: 8px;
+}
+
+.points-stat, .hints-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #10b981; /* Green color to match theme */
+}
+
+.polaroid-caption {
+  position: absolute;
+  bottom: 40px; /* Adjusted to appear above stats */
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  color: #333;
+}
+
+.no-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+  background-color: #f9f9f9;
+}
+
+.picture-selector {
+  position: fixed; /* Changed to fixed positioning */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%); /* Center in the viewport */
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); /* Stronger shadow */
+  padding: 16px;
+  z-index: 9999; /* Very high z-index */
+  width: 320px;
+  max-height: 80vh; /* Limit height to 80% of viewport */
+  overflow-y: auto; /* Add scrolling if needed */
+}
+
+/* Add a backdrop to make the selector stand out */
+.profile-picture-container::after {
+  content: '';
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
+  z-index: 9998; /* Just below the selector */
+}
+
+/* Show backdrop when selector is open */
+.profile-picture-container:has(.picture-selector)::after {
+  display: block;
+}
+
+.pictures-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.picture-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.picture-item:hover {
+  background-color: #f5f5f5;
+  transform: scale(1.05);
+}
+
+.picture-item.selected {
+  background-color: #e3f2fd;
+  border: 1px solid #2196f3;
+}
+
+.selector-image {
+  /* Mini polaroid effect for selection grid */
+  width: 60px;
+  height: 60px;
+  padding: 3px 3px 8px 3px;
+  background-color: white;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.picture-name {
+  margin-top: 4px;
+  font-size: 12px;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.close-selector {
+  margin-top: 12px;
+  padding: 6px 12px;
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-selector:hover {
+  background-color: #e0e0e0;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.profile-picture.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  font-style: italic;
+  color: #666;
+}

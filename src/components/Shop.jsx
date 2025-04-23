@@ -121,7 +121,7 @@ function Shop() {
   return (
     <div className="shop-container">
       <div className="shop-header">
-        <h1>Profile Picture Shop</h1>
+        <h1>Shop</h1>
         <div className="user-points">
           <span className="points-icon">💰</span>
           <span className="points-value">{userPoints} points</span>

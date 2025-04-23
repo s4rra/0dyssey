@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../css/profilePicture.css";
 
-function ProfilePicture({ onPictureSelect }) {
+function ProfilePicture({ onPictureSelect, userPoints, userHints }) {
   const [pictures, setPictures] = useState([]);
   const [showSelector, setShowSelector] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -122,11 +122,24 @@ function ProfilePicture({ onPictureSelect }) {
     <div className="profile-picture-container">
       <div className="current-picture" onClick={toggleSelector}>
         {currentPicture ? (
-          <img
-            src={currentPicture.imagePath}
-            alt={currentPicture.displayName}
-            className="profile-image"
-          />
+          <>
+            <img
+              src={currentPicture.imagePath}
+              alt={currentPicture.displayName}
+              className="profile-image"
+            />
+            {/* User stats added in polaroid bottom margin */}
+            <div className="user-stats">
+              <div className="points-stat">
+                <span className="stat-label">Points:</span> 
+                <span className="stat-value">{userPoints}</span>
+              </div>
+              <div className="hints-stat">
+                <span className="stat-label">Hints:</span> 
+                <span className="stat-value">{userHints}</span>
+              </div>
+            </div>
+          </>
         ) : (
           <div className="no-picture">Select Picture</div>
         )}

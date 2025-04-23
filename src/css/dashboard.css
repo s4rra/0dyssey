@@ -6,7 +6,6 @@
   width: 100%;
 }
 
-
 /* === GENERAL CARD LAYOUT === */
 .cards-container {
   display: flex;
@@ -16,6 +15,16 @@
   align-items: flex-start;
 }
 
+/* New profile-calendar column for vertical stacking */
+.profile-calendar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  min-width: 280px;
+  max-width: 350px;
+}
+
 .card {
   background-color: #ffffff;
   border-radius: 12px;
@@ -23,6 +32,72 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   flex: 1 1 300px;
   min-width: 280px;
+}
+
+/* Profile card specific styling */
+.profile-card {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/* New objectives card styling */
+.objectives-card {
+  flex: 2;
+  min-width: 280px;
+  /* Add styles for the combined card */
+  display: flex;
+  flex-direction: column;
+}
+.chart-section {
+  margin-bottom: 1.5rem;
+  /* Increased height for a bigger chart */
+  height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Target the actual chart component - adjusted for bigger size */
+.chart-section > div {
+  max-height: 380px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* If your RadarChart uses a specific class name, you can target it more directly */
+.radar-chart-container {
+  max-height: 380px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+/* Divider between chart and insights */
+.section-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 1rem 0 1.5rem;
+  width: 100%;
+}
+
+/* Styles for the insights section */
+.insights-section {
+  margin-top: 0.5rem;
+}
+
+.calendar-card {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 1rem; /* Reduced padding */
+  transform: scale(0.85); /* Slightly scale down the calendar */
+  transform-origin: top center;
+}
+
+.calendar-card > * {
+  font-size: 0.85rem; /* Slightly reduce font size in calendar */
 }
 
 .card-header {
@@ -44,6 +119,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: #1f2937;
+  margin-bottom: 1rem;
 }
 
 /* === ICONS === */
@@ -121,11 +197,27 @@
     flex-direction: column;
   }
 
+  .profile-calendar-column {
+    max-width: 100%;
+  }
+
   .card {
     width: 100%;
   }
+  
+  .calendar-card {
+    width: 90%;
+  }
+  
+  .objectives-card {
+    width: 100%;
+  }
+  
+  /* Make the chart and insights stack vertically on small screens */
+  .objectives-card {
+    flex-direction: column;
+  }
 }
-
 
 /* === insights === */
 .clickable-card {
@@ -150,7 +242,7 @@
 }
 
 .lesson-notes-scrollable {
-  max-height: 268px;
+  max-height: 200px; /* Reduced height to fit in the combined card */
   overflow-y: auto;
   padding-right: 8px;
 }
