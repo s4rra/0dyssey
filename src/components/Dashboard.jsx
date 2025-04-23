@@ -59,13 +59,23 @@ const Dashboard = () => {
       <h2 className="dashboard-heading">Welcome {user.username}!</h2>
 
       <div className="cards-container">
-        {/* Left column with profile and calendar stacked vertically */}
+        {/* Left column with profile, calendar, and suggestion box stacked vertically */}
         <div className="profile-calendar-column">
           <div className="profile-card">
             <ProfilePicture userPoints={user.points} userHints={user.hints} />
           </div>
           <div className="calendar-card card">
             <StreakCalendar />
+          </div>
+          {/* SuggestionBox directly below calendar with reduced margins */}
+          <div className="suggestion-card reduced-margin">
+            <SuggestionBox
+              unitId={user.unitId}
+              onFeedback={({ tagInsights, unitLabel }) => {
+                setTagInsights(tagInsights);
+                setChartUnitLabel(unitLabel);
+              }}
+            />
           </div>
         </div>
 
@@ -95,16 +105,6 @@ const Dashboard = () => {
             <Insights unitId={user.unitId} />
           </div>
         </div>
-      </div>
-
-      <div className="cards-container">
-        <SuggestionBox
-          unitId={user.unitId}
-          onFeedback={({ tagInsights, unitLabel }) => {
-            setTagInsights(tagInsights);
-            setChartUnitLabel(unitLabel);
-          }}
-        />
       </div>
       
       {errorMsg && <p className="error-text">{errorMsg}</p>}

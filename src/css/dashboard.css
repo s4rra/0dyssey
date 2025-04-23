@@ -15,7 +15,7 @@
   align-items: flex-start;
 }
 
-/* New profile-calendar column for vertical stacking */
+/* Profile-calendar column for vertical stacking now includes suggestion box */
 .profile-calendar-column {
   display: flex;
   flex-direction: column;
@@ -23,6 +23,11 @@
   flex: 1;
   min-width: 280px;
   max-width: 350px;
+}
+
+/* Reduce the gap between calendar and suggestion box */
+.profile-calendar-column .reduced-margin {
+  margin-top: -0.5rem;
 }
 
 .card {
@@ -48,6 +53,7 @@
   display: flex;
   flex-direction: column;
 }
+
 .chart-section {
   margin-bottom: 1.5rem;
   /* Increased height for a bigger chart */
@@ -75,6 +81,7 @@
   justify-content: center;
   align-items: center;
 }
+
 /* Divider between chart and insights */
 .section-divider {
   height: 1px;
@@ -94,10 +101,20 @@
   padding: 1rem; /* Reduced padding */
   transform: scale(0.85); /* Slightly scale down the calendar */
   transform-origin: top center;
+  margin-bottom: -0.5rem; /* Reduce space after calendar */
 }
 
 .calendar-card > * {
   font-size: 0.85rem; /* Slightly reduce font size in calendar */
+}
+
+/* Styling for the suggestion card that's now under the calendar */
+.suggestion-card {
+  flex: 0 0 auto;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
@@ -201,7 +218,7 @@
     max-width: 100%;
   }
 
-  .card {
+  .card, .suggestion-card {
     width: 100%;
   }
   
